@@ -10,3 +10,4 @@ workspaces/projects/*
 !.gitkeep
 npm-debug.log*
 *.tsbuildinfo
+next*.log

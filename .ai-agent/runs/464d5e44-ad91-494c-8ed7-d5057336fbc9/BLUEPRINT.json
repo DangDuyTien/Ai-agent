@@ -9,7 +9,7 @@
     "status": "executing",
     "confidence": 0.42,
     "createdAt": "2026-05-05T04:56:49.656Z",
-    "updatedAt": "2026-05-05T05:09:43.456Z"
+    "updatedAt": "2026-05-05T05:17:03.419Z"
   },
   "intentAnalysis": {
     "projectType": "unknown",
@@ -388,11 +388,11 @@
         "Nếu cần thêm dependency, phải nêu lý do và rủi ro."
       ],
       "dependencies": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 0,
       "projectId": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
       "createdAt": "2026-05-05T04:56:50.151Z",
-      "updatedAt": "2026-05-05T04:56:50.151Z"
+      "updatedAt": "2026-05-05T05:11:05.347Z"
     },
     {
       "id": "45c82137-a646-4fac-a4c7-93cda7d67b1c",
@@ -407,11 +407,11 @@
         "Nếu thiếu thông tin, missing questions không quá 3 câu."
       ],
       "dependencies": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 1,
       "projectId": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
       "createdAt": "2026-05-05T04:56:50.151Z",
-      "updatedAt": "2026-05-05T04:56:50.151Z"
+      "updatedAt": "2026-05-05T05:11:05.356Z"
     },
     {
       "id": "ad4cf874-7e2c-4420-9026-98d90c550e22",
@@ -426,11 +426,11 @@
         "Checklist đánh giá gắn với loại tác vụ."
       ],
       "dependencies": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 2,
       "projectId": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
       "createdAt": "2026-05-05T04:56:50.151Z",
-      "updatedAt": "2026-05-05T04:56:50.151Z"
+      "updatedAt": "2026-05-05T05:11:05.364Z"
     },
     {
       "id": "ed28f6eb-0db7-4da7-a37f-db170d59e43c",
@@ -445,11 +445,11 @@
         "Có luồng CLI/service và log output rõ ràng."
       ],
       "dependencies": [],
-      "status": "pending",
+      "status": "completed",
       "priority": 3,
       "projectId": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
       "createdAt": "2026-05-05T04:56:50.151Z",
-      "updatedAt": "2026-05-05T04:56:50.151Z"
+      "updatedAt": "2026-05-05T05:11:05.374Z"
     }
   ],
   "approvedArtifactSnapshot": [
