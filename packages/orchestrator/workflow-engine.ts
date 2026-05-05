@@ -23,7 +23,15 @@ import {
   runRequirementBuilder,
   runTaskDecomposer
 } from "@/packages/agents/heuristic-agents";
-import { runCodingProvider } from "@/packages/orchestrator/llm-provider";
+import {
+  isLiveProviderConfigured,
+  runArchitecturePlanProvider,
+  runExecutionPromptProvider,
+  runFeatureDiscoveryProvider,
+  runIntentAnalysisProvider,
+  runRequirementsProvider,
+  runTaskPlanningProvider
+} from "@/packages/orchestrator/llm-provider";
 import { runCodeEditingLoop } from "@/packages/orchestrator/code-edit-executor";
 import { runSandboxReview } from "@/packages/orchestrator/sandbox-runner";
 import type {
@@ -65,9 +73,18 @@ export async function analyzeProject(projectId: string, options: AnalyzeOptions 
   await updateProject(projectId, { status: "analyzing" });
   await addLog(projectId, "info", "Bắt đầu phân tích ý tưởng bằng luồng agent.");
 
-  const intent = await runAgent(projectId, "intent_analyzer", { rawIdea: bundle.project.rawIdea }, () =>
-    runIntentAnalyzer(bundle.project)
-  );
+  const intent = await runAgent(projectId, "intent_analyzer", { rawIdea: bundle.project.rawIdea, codebaseContext }, async (runId) => {
+    const fallback = () => runIntentAnalyzer(bundle.project);
+    if (!isLiveProviderConfigured()) return fallback();
+    try {
+      const providerOutput = await runIntentAnalysisProvider({ project: bundle.project, codebaseContext });
+      await addProviderLog(projectId, runId, "Phân tích ý định", providerOutput);
+      return providerOutput.content;
+    } catch (error) {
+      await addProviderFallbackLog(projectId, runId, "intent_analysis", error);
+      return fallback();
+    }
+  });
   await addArtifact(projectId, "intent_analysis", intent, "intent_analyzer");
   await setProjectTypeFromAnalysis(
     projectId,
@@ -84,75 +101,171 @@ export async function analyzeProject(projectId: string, options: AnalyzeOptions 
   }
 
   const latestProject = (await requireBundle(projectId)).project;
-  const requirements = await runAgent(projectId, "requirement_builder", { intent, codebaseContext }, () => {
-    const output = runRequirementBuilder(latestProject, intent);
-    if (codebaseContext) {
-      output.primaryGoals.unshift("Sửa/nâng cấp codebase hiện có với thay đổi tối thiểu và có thể review bằng diff.");
-      output.constraints.push(`Codebase hiện có: ${codebaseContext.sourcePath}`);
-      output.constraints.push(`Giữ framework/script hiện có: ${codebaseContext.frameworkSignals.join(", ") || "chưa rõ"}.`);
+  const requirements = await runAgent(projectId, "requirement_builder", { intent, codebaseContext }, async (runId) => {
+    const fallback = () => {
+      const output = runRequirementBuilder(latestProject, intent);
+      if (codebaseContext) {
+        output.primaryGoals.unshift("Sửa/nâng cấp codebase hiện có với thay đổi tối thiểu và có thể review bằng diff.");
+        output.constraints.push(`Codebase hiện có: ${codebaseContext.sourcePath}`);
+        output.constraints.push(`Giữ framework/script hiện có: ${codebaseContext.frameworkSignals.join(", ") || "chưa rõ"}.`);
+      }
+      return output;
+    };
+    if (isLiveProviderConfigured()) {
+      try {
+        const providerOutput = await runRequirementsProvider({ project: latestProject, intent, codebaseContext });
+        await addProviderLog(projectId, runId, "Yêu cầu", providerOutput);
+        return providerOutput.content;
+      } catch (error) {
+        await addProviderFallbackLog(projectId, runId, "requirements", error);
+      }
     }
-    return output;
+    return fallback();
   });
   await addArtifact(projectId, "requirements", requirements, "requirement_builder");
 
-  const features = await runAgent(projectId, "feature_discovery", { intent, requirements, codebaseContext }, () => {
-    const output = runFeatureDiscovery(latestProject, intent, requirements);
-    if (codebaseContext) {
-      output.coreFeatures.unshift("Lập kế hoạch thay đổi theo codebase hiện có");
-      output.typeSpecific = {
-        ...output.typeSpecific,
-        existingCodebase: {
-          sourcePath: codebaseContext.sourcePath,
-          keyFiles: codebaseContext.keyFiles.slice(0, 30),
-          detectedCommands: codebaseContext.detectedCommands
-        }
-      };
+  const features = await runAgent(projectId, "feature_discovery", { intent, requirements, codebaseContext }, async (runId) => {
+    const fallback = () => {
+      const output = runFeatureDiscovery(latestProject, intent, requirements);
+      if (codebaseContext) {
+        output.coreFeatures.unshift("Lập kế hoạch thay đổi theo codebase hiện có");
+        output.typeSpecific = {
+          ...output.typeSpecific,
+          existingCodebase: {
+            sourcePath: codebaseContext.sourcePath,
+            keyFiles: codebaseContext.keyFiles.slice(0, 30),
+            detectedCommands: codebaseContext.detectedCommands
+          }
+        };
+      }
+      return output;
+    };
+    if (isLiveProviderConfigured()) {
+      try {
+        const providerOutput = await runFeatureDiscoveryProvider({ project: latestProject, intent, requirements, codebaseContext });
+        await addProviderLog(projectId, runId, "Chức năng", providerOutput);
+        return providerOutput.content;
+      } catch (error) {
+        await addProviderFallbackLog(projectId, runId, "feature_discovery", error);
+      }
     }
-    return output;
+    return fallback();
   });
   await addArtifact(projectId, "feature_discovery", features, "feature_discovery");
 
-  const architecture = await runAgent(projectId, "architecture_planner", { intent, features, codebaseContext }, () => {
-    const output = runArchitecturePlanner(latestProject, intent, features);
-    if (codebaseContext) {
-      output.overview = `${output.overview} Chế độ sửa repo sẽ ưu tiên stack đang có: ${
-        codebaseContext.frameworkSignals.join(", ") || "chưa rõ"
-      }.`;
-      output.runtime = Array.from(new Set([...output.runtime, ...Object.values(codebaseContext.detectedCommands).filter(Boolean)]));
-      output.risks = Array.from(new Set([...output.risks, ...codebaseContext.risks]));
+  const architecture = await runAgent(projectId, "architecture_planner", { intent, requirements, features, codebaseContext }, async (runId) => {
+    const fallback = () => {
+      const output = runArchitecturePlanner(latestProject, intent, features);
+      if (codebaseContext) {
+        output.overview = `${output.overview} Chế độ sửa repo sẽ ưu tiên stack đang có: ${
+          codebaseContext.frameworkSignals.join(", ") || "chưa rõ"
+        }.`;
+        output.runtime = Array.from(new Set([...output.runtime, ...Object.values(codebaseContext.detectedCommands).filter(Boolean)]));
+        output.risks = Array.from(new Set([...output.risks, ...codebaseContext.risks]));
+      }
+      return output;
+    };
+    if (isLiveProviderConfigured()) {
+      try {
+        const providerOutput = await runArchitecturePlanProvider({ project: latestProject, intent, requirements, features, codebaseContext });
+        await addProviderLog(projectId, runId, "Kiến trúc", providerOutput);
+        return providerOutput.content;
+      } catch (error) {
+        await addProviderFallbackLog(projectId, runId, "architecture_plan", error);
+      }
     }
-    return output;
+    return fallback();
   });
   await addArtifact(projectId, "architecture_plan", architecture, "architecture_planner");
 
-  const decomposed = await runAgent(projectId, "task_decomposer", { requirements, features, architecture, codebaseContext }, () => {
-    const output = runTaskDecomposer(latestProject, intent, requirements, features, architecture);
-    if (codebaseContext) {
-      output.tasks.unshift({
-        id: createId(),
-        title: "Rà soát tác động lên codebase hiện có",
-        objective: "Xác định file/module cần sửa trong repo hiện có trước khi thay đổi code.",
-        taskType: "codebase_impact_analysis",
-        targetArea: "existing_codebase",
-        acceptanceCriteria: [
-          "Chỉ ra file/module liên quan dựa trên ngữ cảnh codebase.",
-          "Giữ trình quản lý gói, framework và script hiện có.",
-          "Nếu cần thêm dependency, phải nêu lý do và rủi ro."
-        ],
-        dependencies: [],
-        status: "pending",
-        priority: 0
-      });
+  const decomposed = await runAgent(projectId, "task_decomposer", { requirements, features, architecture, codebaseContext }, async (runId) => {
+    let output: ReturnType<typeof runTaskDecomposer> | undefined;
+    let plannerWasAi = false;
+
+    if (isLiveProviderConfigured()) {
+      try {
+        const providerOutput = await runTaskPlanningProvider({
+          project: latestProject,
+          intent,
+          requirements,
+          features,
+          architecture,
+          codebaseContext
+        });
+        output = {
+          roadmap: providerOutput.roadmap,
+          tasks: providerOutput.tasks
+        };
+        plannerWasAi = true;
+        await addLog(projectId, "info", `AI đã sinh lộ trình và task plan bằng ${providerOutput.provider}.`, {
+          kind: "provider_output",
+          provider: providerOutput.provider,
+          mode: providerOutput.mode,
+          output: providerOutput.output
+        }, runId);
+      } catch (error) {
+        await addLog(
+          projectId,
+          "warn",
+          "Provider AI không sinh được task plan hợp lệ, chuyển sang bộ phân rã heuristic động.",
+          { error: error instanceof Error ? error.message : String(error) },
+          runId
+        );
+      }
     }
+
+    if (!output) {
+      output = runTaskDecomposer(latestProject, intent, requirements, features, architecture);
+    }
+
+    if (codebaseContext && !plannerWasAi) {
+      const alreadyHasCodebaseTask = output.tasks.some(
+        (task) => task.taskType === "codebase_impact_analysis" || task.targetArea === "existing_codebase"
+      );
+      if (!alreadyHasCodebaseTask) {
+        output.tasks.unshift({
+          id: createId(),
+          title: "Rà soát tác động lên codebase hiện có",
+          objective: "Xác định file/module cần sửa trong repo hiện có trước khi thay đổi code.",
+          taskType: "codebase_impact_analysis",
+          targetArea: "existing_codebase",
+          acceptanceCriteria: [
+            "Chỉ ra file/module liên quan dựa trên ngữ cảnh codebase.",
+            "Giữ trình quản lý gói, framework và script hiện có.",
+            "Nếu cần thêm dependency, phải nêu lý do và rủi ro."
+          ],
+          dependencies: [],
+          status: "pending",
+          priority: 0
+        });
+      }
+    }
+    output.tasks = output.tasks.map((task, index) => ({ ...task, priority: index + 1 }));
     return output;
   });
   await addArtifact(projectId, "roadmap", decomposed.roadmap, "task_decomposer");
   const storedTasks = await replaceProjectTasks(projectId, decomposed.tasks);
   await addArtifact(projectId, "task_plan", storedTasks, "task_decomposer");
 
-  const executionPrompts = await runAgent(projectId, "prompt_composer", { tasks: storedTasks, codebaseContext }, () =>
-    runPromptComposer(latestProject, requirements, features, architecture, storedTasks, codebaseContext)
-  );
+  const executionPrompts = await runAgent(projectId, "prompt_composer", { tasks: storedTasks, codebaseContext }, async (runId) => {
+    if (isLiveProviderConfigured()) {
+      try {
+        const providerOutput = await runExecutionPromptProvider({
+          project: latestProject,
+          requirements,
+          features,
+          architecture,
+          tasks: storedTasks,
+          codebaseContext
+        });
+        await addProviderLog(projectId, runId, "Prompt thực thi", providerOutput);
+        return providerOutput.content;
+      } catch (error) {
+        await addProviderFallbackLog(projectId, runId, "execution_prompt", error);
+      }
+    }
+    return runPromptComposer(latestProject, requirements, features, architecture, storedTasks, codebaseContext);
+  });
   await addArtifact(projectId, "execution_prompt", executionPrompts, "prompt_composer");
 
   await runAgent(projectId, "memory_context_agent", { intent, requirements }, async () => {
@@ -239,11 +352,7 @@ export async function executeProject(projectId: string) {
     const readmeFile = path.join(outputDir, "README.md");
     const tasksFile = path.join(outputDir, "TASKS.md");
     const promptsFile = path.join(outputDir, "PROMPTS.md");
-    const providerOutputFile = path.join(outputDir, "PROVIDER_OUTPUT.md");
-    
-    await addLog(projectId, "info", `[Hệ thống] Đang chạy Provider adapter (tổng hợp kế hoạch cho ${blueprint.executionPrompts.length} prompts)...`, undefined, runId);
-    const providerResult = await runCodingProvider(blueprint.executionPrompts);
-    await addLog(projectId, "info", `[Hệ thống] Đã nhận kế hoạch tổng quan từ Provider. Nội dung:\n${providerResult.output}\n\nBắt đầu vòng lặp sửa code chi tiết...`, undefined, runId);
+    await addLog(projectId, "info", `[Hệ thống] Bắt đầu vòng lặp thực thi chi tiết cho ${blueprint.executionPrompts.length} tác vụ...`, undefined, runId);
 
     const codeEditResult = await runCodeEditingLoop({
       workspace,
@@ -281,7 +390,6 @@ export async function executeProject(projectId: string) {
     await fs.writeFile(readmeFile, renderReadme(blueprint.project, blueprint), "utf8");
     await fs.writeFile(tasksFile, renderTasks(blueprint.tasks), "utf8");
     await fs.writeFile(promptsFile, renderPrompts(blueprint.executionPrompts), "utf8");
-    await fs.writeFile(providerOutputFile, providerResult.output, "utf8");
 
     for (const task of blueprint.tasks) {
       await updateTask(projectId, task.id, { status: "completed" });
@@ -289,12 +397,11 @@ export async function executeProject(projectId: string) {
 
     return {
       workspace,
-      files: [blueprintFile, readmeFile, tasksFile, promptsFile, providerOutputFile],
+      files: [blueprintFile, readmeFile, tasksFile, promptsFile],
       completedTasks: blueprint.tasks.length,
       approvedArtifactSnapshot,
       changedFiles: codeEditResult.changedFiles,
-      codeEditIterations: codeEditResult.iterations,
-      providerResult
+      codeEditIterations: codeEditResult.iterations
     };
   });
 
@@ -446,18 +553,73 @@ async function runAgent<TOutput>(
 ): Promise<TOutput> {
   const run = await createAgentRun(projectId, agentName, input);
   const agentLabel = formatAgentName(agentName);
-  await addLog(projectId, "info", `${agentLabel} đang chạy.`, undefined, run.id);
+  const startedAtMs = Date.now();
+  await addLog(
+    projectId,
+    "info",
+    `Gửi yêu cầu tới ${agentLabel}.`,
+    { kind: "agent_input", agentName, input },
+    run.id
+  );
   try {
     const output = await handler(run.id);
     await finishAgentRun(run.id, output);
-    await addLog(projectId, "info", `${agentLabel} đã hoàn tất.`, undefined, run.id);
+    await addLog(
+      projectId,
+      "info",
+      `AI trả kết quả từ ${agentLabel} sau ${formatDuration(Date.now() - startedAtMs)}.`,
+      { kind: "agent_output", agentName, output, elapsedMs: Date.now() - startedAtMs },
+      run.id
+    );
     return output;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Lỗi chưa xác định";
     await finishAgentRun(run.id, undefined, message);
-    await addLog(projectId, "error", `${agentLabel} lỗi: ${message}`, undefined, run.id);
+    await addLog(projectId, "error", `${agentLabel} lỗi: ${message}`, { kind: "agent_error", agentName, error: message }, run.id);
     throw error;
   }
+}
+
+async function addProviderLog(
+  projectId: string,
+  runId: string,
+  artifactLabel: string,
+  providerOutput: { provider: string; mode: string; output: string }
+) {
+  await addLog(
+    projectId,
+    "info",
+    `Provider ${providerOutput.provider} trả dữ liệu ${artifactLabel}.`,
+    {
+      kind: "provider_output",
+      provider: providerOutput.provider,
+      mode: providerOutput.mode,
+      output: providerOutput.output
+    },
+    runId
+  );
+}
+
+async function addProviderFallbackLog(projectId: string, runId: string, artifactType: ArtifactType, error: unknown) {
+  await addLog(
+    projectId,
+    "warn",
+    `Provider AI không trả được ${artifactType}, chuyển sang fallback heuristic.`,
+    {
+      kind: "provider_fallback",
+      artifactType,
+      error: error instanceof Error ? error.message : String(error)
+    },
+    runId
+  );
+}
+
+function formatDuration(ms: number) {
+  if (ms < 1000) return `${ms}ms`;
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const restSeconds = seconds % 60;
+  return minutes ? `${minutes}m ${restSeconds}s` : `${seconds}s`;
 }
 
 function formatAgentName(agentName: AgentName) {

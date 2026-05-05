@@ -25,6 +25,11 @@ export async function runCodeEditingLoop(input: {
   onLog?: (msg: string) => Promise<void>;
   abortCheck?: () => Promise<boolean>;
 }): Promise<{ iterations: CodeEditIteration[]; changedFiles: string[] }> {
+  const providerMode = (process.env.AI_AGENT_LLM_PROVIDER || "auto").trim().toLowerCase();
+  if (process.env.AI_AGENT_STATIC_FILE_EDITS || (providerMode === "mock" && process.env.AI_AGENT_EXECUTOR !== "codex")) {
+    return runProviderFileEditingLoop(input);
+  }
+
   const command = process.env.AI_AGENT_CODEX_COMMAND || "codex";
   let codexAvailable = false;
   try {
@@ -36,13 +41,37 @@ export async function runCodeEditingLoop(input: {
   }
 
   if (process.env.AI_AGENT_EXECUTOR === "codex" || codexAvailable) {
-    return runCodexCliEditingLoop(input);
+    const codexResult = await runCodexCliEditingLoop(input);
+    if (!shouldFallbackFromCodexCli(codexResult.iterations)) {
+      return codexResult;
+    }
+    if (input.onLog) {
+      await input.onLog("[Hệ thống] Codex CLI không dùng được do token/kết nối/quota. Chuyển sang provider API fallback.");
+    }
+    return runProviderFileEditingLoop(input, {
+      iterations: codexResult.iterations,
+      changedFiles: codexResult.changedFiles
+    });
   }
 
+  return runProviderFileEditingLoop(input);
+}
+
+async function runProviderFileEditingLoop(
+  input: {
+    workspace: string;
+    prompts: ExecutionPrompt[];
+    codebaseContext?: CodebaseContext;
+    maxIterations?: number;
+    onLog?: (msg: string) => Promise<void>;
+    abortCheck?: () => Promise<boolean>;
+  },
+  initialResult?: { iterations: CodeEditIteration[]; changedFiles: string[] }
+): Promise<{ iterations: CodeEditIteration[]; changedFiles: string[] }> {
   const maxFixIterations = input.maxIterations ?? Number(process.env.AI_AGENT_MAX_FIX_ITERATIONS || 2);
-  const iterations: CodeEditIteration[] = [];
-  const changedFiles = new Set<string>();
-  let iterationNumber = 0;
+  const iterations: CodeEditIteration[] = [...(initialResult?.iterations ?? [])];
+  const changedFiles = new Set<string>(initialResult?.changedFiles ?? []);
+  let iterationNumber = iterations.length;
 
   for (const prompt of input.prompts) {
     if (input.abortCheck && (await input.abortCheck())) {
@@ -115,6 +144,24 @@ export async function runCodeEditingLoop(input: {
     iterations,
     changedFiles: Array.from(changedFiles)
   };
+}
+
+function shouldFallbackFromCodexCli(iterations: CodeEditIteration[]) {
+  const last = iterations[iterations.length - 1];
+  if (!last || last.appliedEdits.length > 0 || !last.rejectedEdits.length) return false;
+  const text = [
+    last.summary,
+    last.stdout,
+    last.stderr,
+    last.fixPrompt,
+    ...last.rejectedEdits.map((edit) => edit.reason)
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return /login|auth|token|quota|rate limit|429|insufficient_quota|network|connection|connect|timeout|timed out|fetch failed|econn|enotfound|enoent|socket|offline/i.test(
+    text
+  );
 }
 
 async function applyFileEdit(workspace: string, edit: FileEdit): Promise<AppliedFileEdit> {

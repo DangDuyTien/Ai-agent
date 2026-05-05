@@ -38,6 +38,13 @@ type CodexStatus = {
   loggedIn: boolean;
   loginStatus: string;
   executorEnabled: boolean;
+  providerMode: string;
+  codexApiConfigured: boolean;
+  codexApiModel?: string;
+  geminiConfigured: boolean;
+  geminiModel: string;
+  preferredProvider: string;
+  fallbackProvider: string;
 };
 
 const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number }> }> = [
@@ -155,7 +162,10 @@ export default function HomePage() {
 
   async function createAndAnalyze() {
     setBusy(true);
+    setIsExecuting(true);
     setNotice("");
+    setActiveTab("logs");
+    let interval: ReturnType<typeof setInterval> | undefined;
     try {
       const created = await apiPost("/api/projects", {
         rawIdea,
@@ -165,23 +175,29 @@ export default function HomePage() {
       });
       const project = created.project as Project;
       setSelectedProjectId(project.id);
+      interval = setInterval(() => {
+        void loadBlueprint(project.id);
+      }, 1000);
       if (projectMode === "existing_project") {
         await apiPost(`/api/projects/${project.id}/codebase`, { sourcePath });
       }
       const analyzed = await apiPost(`/api/projects/${project.id}/analyze`, { autoAssume });
       setBlueprint(analyzed.blueprint);
       await loadProjects();
-      setActiveTab("analysis");
       
       if (autoPilot) {
         void runAutoPilot(project, analyzed.blueprint);
       } else {
         setNotice("Đã tạo blueprint và đang chờ duyệt.");
+        setIsExecuting(false);
         setBusy(false);
       }
     } catch (error) {
       setNotice(error instanceof Error ? toVietnameseMessage(error.message) : "Có lỗi khi tạo dự án.");
       setBusy(false);
+      setIsExecuting(false);
+    } finally {
+      if (interval) clearInterval(interval);
     }
   }
 
@@ -222,15 +238,24 @@ export default function HomePage() {
   async function rerunAnalysis() {
     if (!blueprint) return;
     setBusy(true);
+    setIsExecuting(true);
     setNotice("");
+    setActiveTab("logs");
+    const projectId = blueprint.project.id;
+    const interval = setInterval(() => {
+      void loadBlueprint(projectId);
+    }, 1000);
     try {
-      const analyzed = await apiPost(`/api/projects/${blueprint.project.id}/analyze`, { autoAssume });
+      const analyzed = await apiPost(`/api/projects/${projectId}/analyze`, { autoAssume });
       setBlueprint(analyzed.blueprint);
       await loadProjects();
       setNotice("Đã chạy lại luồng agent.");
     } catch (error) {
       setNotice(error instanceof Error ? toVietnameseMessage(error.message) : "Không chạy lại được phần phân tích.");
     } finally {
+      clearInterval(interval);
+      await loadBlueprint(projectId);
+      setIsExecuting(false);
       setBusy(false);
     }
   }
@@ -334,15 +359,24 @@ export default function HomePage() {
   async function review() {
     if (!blueprint) return;
     setBusy(true);
+    setIsExecuting(true);
     setNotice("");
+    setActiveTab("logs");
+    const projectId = blueprint.project.id;
+    const interval = setInterval(() => {
+      void loadBlueprint(projectId);
+    }, 1000);
     try {
-      await apiPost(`/api/projects/${blueprint.project.id}/review`, {});
+      await apiPost(`/api/projects/${projectId}/review`, {});
       await loadBlueprint();
       setActiveTab("execution");
       setNotice("Agent đánh giá đã tạo báo cáo.");
     } catch (error) {
       setNotice(error instanceof Error ? toVietnameseMessage(error.message) : "Đánh giá thất bại.");
     } finally {
+      clearInterval(interval);
+      await loadBlueprint(projectId);
+      setIsExecuting(false);
       setBusy(false);
     }
   }
@@ -602,7 +636,13 @@ function CodexCliPanel({
   onRefresh: () => void;
 }) {
   const loginLabel = status?.loggedIn ? "đã đăng nhập" : "chưa đăng nhập";
-  const executorLabel = status?.executorEnabled ? "Codex" : "Gemini API";
+  const executorLabel = status?.loggedIn
+    ? "Codex CLI"
+    : status?.codexApiConfigured
+      ? "Codex API"
+      : status?.geminiConfigured
+        ? "Gemini API"
+        : "mock";
 
   return (
     <section className="codexPanel">
@@ -610,8 +650,8 @@ function CodexCliPanel({
         <div className="codexTitle">
           <TerminalSquare size={18} />
           <div>
-            <strong>Codex CLI</strong>
-            <small>Bộ thực thi</small>
+            <strong>Codex / API</strong>
+            <small>Ưu tiên Codex</small>
           </div>
         </div>
         <button className="sidebarIconButton" type="button" onClick={onRefresh} disabled={loading} aria-label="Làm mới Codex CLI">
@@ -634,7 +674,7 @@ function CodexCliPanel({
               <strong>{loginLabel}</strong>
             </div>
             <div>
-              <span>Bộ thực thi</span>
+              <span>Ưu tiên</span>
               <strong>{executorLabel}</strong>
             </div>
             <div>
@@ -642,15 +682,19 @@ function CodexCliPanel({
               <strong>{status?.version || "chưa rõ"}</strong>
             </div>
             <div>
-              <span>Đang bật</span>
-              <strong>{status?.executorEnabled ? "có" : "không"}</strong>
+              <span>Fallback</span>
+              <strong>{status?.geminiConfigured ? "Gemini" : "mock"}</strong>
+            </div>
+            <div>
+              <span>Codex API</span>
+              <strong>{status?.codexApiConfigured ? status.codexApiModel || "có" : "chưa cấu hình"}</strong>
             </div>
           </div>
 
           {status?.loginStatus ? <pre className="codexLog">{status.loginStatus}</pre> : null}
 
           <div className="codexCommands">
-            <code>AI_AGENT_EXECUTOR=codex npm run dev:clean -- --hostname 127.0.0.1 --port 3100</code>
+            <code>AI_AGENT_CODEX_API_KEY=... GEMINI_API_KEY=... npm run dev:clean</code>
             <code>codex logout && codex login</code>
           </div>
         </>
@@ -818,7 +862,7 @@ function TabContent({
   return (
     <div className="stack">
       <PanelTitle title="Nhật ký chạy ngầm" subtitle="Mô phỏng Terminal trực tiếp" />
-      <TerminalWindow logs={blueprint.logs} isRunning={isExecuting} />
+      <TerminalWindow logs={blueprint.logs} runs={blueprint.agentRuns} isRunning={isExecuting} />
       
       <PanelTitle title="Lịch sử lượt chạy" subtitle="Các tác vụ đã kích hoạt" />
       <div className="runGrid">

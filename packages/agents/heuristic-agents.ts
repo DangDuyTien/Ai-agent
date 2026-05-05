@@ -586,36 +586,60 @@ function featurePackForType(
 
 function buildRoadmap(projectType: ProjectType, features: FeatureDiscovery, architecture: ArchitecturePlan): RoadmapMilestone[] {
   const typeLabel = typeLabels[projectType];
-  return [
-    {
+  const stackItems = [
+    ...(architecture.frontend?.stack || []),
+    ...(architecture.backend?.stack || []),
+    ...(architecture.api?.style ? [architecture.api.style] : [])
+  ].slice(0, 3);
+  const mainStack = stackItems.join(", ") || "công nghệ phù hợp";
+
+  const coreList = features.coreFeatures
+    .filter((feature) => !/blueprint|cổng duyệt|nhật ký agent/i.test(feature))
+    .slice(0, 3);
+  const typeSpecificKeys = Object.keys(features.typeSpecific);
+  const specificFeatures =
+    typeSpecificKeys.length > 0 ? collectFeatureStrings(features.typeSpecific[typeSpecificKeys[0]]).slice(0, 3) : features.optionalFeatures.slice(0, 3);
+  const milestones: RoadmapMilestone[] = [];
+
+  if (stackItems.length || architecture.runtime.length) {
+    milestones.push({
       id: createId(),
-      title: "Nền tảng blueprint",
-      objective: `Chuẩn hóa ý tưởng thành blueprint cho ${typeLabel}.`,
-      deliverables: ["Phân tích ý định", "Yêu cầu", "Đề xuất chức năng"],
-      exitCriteria: ["Có loại dự án và giả định rõ", "Chức năng không bị hard-code theo CRUD/web"]
-    },
-    {
+      title: `Chốt nền tảng triển khai cho ${typeLabel}`,
+      objective: `Thiết lập phần nền cần có bằng ${mainStack}, chỉ gồm thành phần đã được kiến trúc đề xuất.`,
+      deliverables: stackItems.length ? stackItems : architecture.runtime.slice(0, 3),
+      exitCriteria: ["Có thể chạy luồng rỗng hoặc prototype tối thiểu.", "Không thêm stack ngoài kiến trúc đã duyệt."]
+    });
+  }
+
+  for (const feature of coreList) {
+    milestones.push({
       id: createId(),
-      title: "Kiến trúc và workflow",
-      objective: "Xác định stack, runtime và luồng thực thi phù hợp với ngữ cảnh.",
-      deliverables: ["Kế hoạch kiến trúc", "Danh sách rủi ro", "Cổng duyệt"],
-      exitCriteria: ["Chỉ đề xuất frontend/backend/API/database khi có lý do", "Có luồng người dùng review trước khi thực thi"]
-    },
-    {
+      title: `Triển khai ${feature}`,
+      objective: `Đưa "${feature}" thành luồng MVP kiểm chứng được cho ${typeLabel}.`,
+      deliverables: [feature],
+      exitCriteria: ["Luồng chính chạy được.", "Có trạng thái lỗi hoặc trường hợp rìa tối thiểu."]
+    });
+  }
+
+  if (specificFeatures.length || architecture.integrations.length) {
+    milestones.push({
       id: createId(),
-      title: "Prompt triển khai",
-      objective: "Chia công việc thành tác vụ và prompt mà agent lập trình có thể thực thi.",
-      deliverables: ["Kế hoạch tác vụ", "Prompt thực thi", "Checklist đánh giá"],
-      exitCriteria: ["Tác vụ có tiêu chí nghiệm thu", "Prompt đủ ngữ cảnh và không mở rộng phạm vi"]
-    },
-    {
-      id: createId(),
-      title: "Vòng thực thi và đánh giá",
-      objective: "Thực thi từng tác vụ, đánh giá kết quả và tạo prompt sửa lỗi khi chưa đạt.",
-      deliverables: ["Kết quả thư mục làm việc", "Báo cáo đánh giá", "Prompt sửa lỗi nếu cần"],
-      exitCriteria: ["Có tài liệu đầu ra", "Đánh giá đạt hoặc có prompt sửa tiếp"]
-    }
-  ];
+      title: architecture.integrations.length ? `Kết nối ${architecture.integrations.slice(0, 3).join(", ")}` : "Hoàn thiện nghiệp vụ đặc thù",
+      objective: "Hoàn thiện các phần riêng của ý tưởng, tích hợp hoặc dữ liệu domain.",
+      deliverables: architecture.integrations.length ? architecture.integrations.slice(0, 3) : specificFeatures,
+      exitCriteria: ["Luồng tích hợp/nghiệp vụ có xử lý lỗi.", "Không hardcode secret hoặc dữ liệu thật."]
+    });
+  }
+
+  milestones.push({
+    id: createId(),
+    title: `Kiểm chứng luồng MVP của ${typeLabel}`,
+    objective: "Chạy thử luồng chính, ghi nhận lỗi còn lại và chuẩn bị tài liệu chạy lại.",
+    deliverables: ["Checklist kiểm thử", "Ghi chú vận hành", "Danh sách lỗi còn lại nếu có"],
+    exitCriteria: ["Tiêu chí thành công chính được kiểm chứng.", "Có hướng dẫn chạy hoặc review kết quả."]
+  });
+
+  return milestones.slice(0, 6);
 }
 
 function buildTasks(
@@ -626,70 +650,227 @@ function buildTasks(
   architecture: ArchitecturePlan,
   roadmap: RoadmapMilestone[]
 ): TaskDraft[] {
-  const contextual = contextualTasks(project, intent, requirements, features, architecture, roadmap[1]?.id || createId());
-  
-  const granularTasks = contextual.flatMap((task, index) => {
-    return [
-      {
-        ...task,
-        id: createId(),
-        title: `[Phase 1.1] Khởi tạo File & Thư mục: ${task.title}`,
-        objective: `Tạo cấu trúc thư mục và khởi tạo các file rỗng (hoặc khung trống cơ bản) cho ${task.targetArea}. Tuyệt đối không viết logic bên trong file lúc này.`,
-        taskType: `${task.taskType}_1_1`,
-        acceptanceCriteria: ["File/folder tồn tại, đúng vị trí.", "Chưa có logic nghiệp vụ."]
-      },
-      {
-        ...task,
-        id: createId(),
-        title: `[Phase 1.2] Định nghĩa Kiểu dữ liệu (Types): ${task.title}`,
-        objective: `Khai báo các Type, Interface, Schema, DTOs và Hằng số (Constants) cho ${task.targetArea}.`,
-        taskType: `${task.taskType}_1_2`,
-        acceptanceCriteria: ["Các module dùng chung không bị lỗi Type khi tương tác."]
-      },
-      {
-        ...task,
-        id: createId(),
-        title: `[Phase 2.1] Viết Utils & Mock Data: ${task.title}`,
-        objective: `Tạo các hàm tiện ích nhỏ (utils) và dữ liệu giả (Mock Data) theo đúng chuẩn Type vừa định nghĩa.`,
-        taskType: `${task.taskType}_2_1`,
-        acceptanceCriteria: ["Có sẵn dữ liệu tĩnh để test nội bộ mà không cần phụ thuộc bên ngoài."]
-      },
-      {
-        ...task,
-        id: createId(),
-        title: `[Phase 2.2] Giao diện & Logic tĩnh: ${task.title}`,
-        objective: `Viết nội dung các hàm hoặc Component lõi, nạp Mock Data vào để kiểm chứng. CHƯA nối API/DB thật.`,
-        taskType: `${task.taskType}_2_2`,
-        acceptanceCriteria: ["Hàm/Component chạy mượt mà với dữ liệu cứng (hardcoded)."]
-      },
-      {
-        ...task,
-        id: createId(),
-        title: `[Phase 3.1] Chuẩn bị lớp Data Access (API/DB): ${task.title}`,
-        objective: `Viết riêng các hàm gọi API, truy vấn DB hoặc cấu hình Global State cho ${task.targetArea}.`,
-        taskType: `${task.taskType}_3_1`,
-        acceptanceCriteria: ["Endpoint hoặc Query đã được định nghĩa nhưng chưa gắn vào Component chính."]
-      },
-      {
-        ...task,
-        id: createId(),
-        title: `[Phase 3.2] Nối luồng dữ liệu thật: ${task.title}`,
-        objective: `Thay thế hoàn toàn Mock Data bằng việc gọi lớp Data Access vừa tạo. Kết nối dữ liệu sống vào ${task.targetArea}.`,
-        taskType: `${task.taskType}_3_2`,
-        acceptanceCriteria: ["Luồng dữ liệu thực tế chạy thông suốt từ đầu đến cuối."]
-      },
-      {
-        ...task,
-        id: createId(),
-        title: `[Phase 3.3] Xử lý lỗi & Biên tập (Edge Cases): ${task.title}`,
-        objective: `Bổ sung try/catch, trạng thái Loading, màn hình báo lỗi (Error Fallback) và dọn dẹp các dòng log thừa.`,
-        taskType: `${task.taskType}_3_3`,
-        acceptanceCriteria: ["Luồng không bị crash khi mạng lỗi hoặc data null.", ...task.acceptanceCriteria]
-      }
-    ] as TaskDraft[];
-  });
+  const parentTaskId = roadmap[1]?.id || roadmap[0]?.id || createId();
+  const candidates = [
+    ...contextualTasks(project, intent, requirements, features, architecture, parentTaskId),
+    ...featureDrivenTasks(project, requirements, features, parentTaskId),
+    ...architectureDrivenTasks(project, requirements, architecture, parentTaskId),
+    ...integrationDrivenTasks(project, requirements, architecture, parentTaskId),
+    validationTask(project, intent, requirements, parentTaskId)
+  ];
 
-  return granularTasks.map((task, index) => ({ ...task, priority: index + 1 }));
+  return dedupeTasks(candidates)
+    .slice(0, 7)
+    .map((task, index) => ({ ...task, priority: index + 1 }));
+}
+
+function featureDrivenTasks(
+  project: Project,
+  requirements: Requirements,
+  features: FeatureDiscovery,
+  parentTaskId: string
+): TaskDraft[] {
+  const ignored = new Set([
+    "Blueprint dự án động theo ngữ cảnh",
+    "Cổng duyệt trước các bước có tác động lớn",
+    "Nhật ký agent theo thời gian"
+  ]);
+  const fromCore = features.coreFeatures.filter((feature) => !ignored.has(feature));
+  const fromSpecific = collectFeatureStrings(features.typeSpecific).filter((feature) => feature.length <= 90);
+  const picked = Array.from(new Set([...fromCore, ...fromSpecific])).slice(0, 3);
+
+  return picked.map((feature, index) =>
+    createTaskDraft({
+      title: `Hiện thực hóa: ${feature}`,
+      objective: `Chuyển phần "${feature}" trong ý tưởng "${compactIdea(project.rawIdea)}" thành đầu ra MVP có thể kiểm chứng.`,
+      taskType: `implement_${taskSlug(feature)}`,
+      targetArea: inferTargetAreaFromFeature(feature),
+      parentTaskId,
+      acceptanceCriteria: [
+        `Kết quả phải phục vụ: ${requirements.oneLineSummary}`,
+        `Có đầu ra cụ thể cho "${feature}" thay vì mô tả chung.`,
+        "Không thêm phạm vi ngoài feature đã được duyệt."
+      ],
+      priority: index + 2
+    })
+  );
+}
+
+function architectureDrivenTasks(
+  project: Project,
+  requirements: Requirements,
+  architecture: ArchitecturePlan,
+  parentTaskId: string
+): TaskDraft[] {
+  const tasks: TaskDraft[] = [];
+
+  if (architecture.frontend?.recommended) {
+    tasks.push(
+      createTaskDraft({
+        title: "Thiết kế trải nghiệm chính theo workflow người dùng",
+        objective: `Tạo luồng giao diện hoặc màn hình chính phục vụ ý tưởng: ${compactIdea(project.rawIdea)}.`,
+        taskType: "design_primary_experience",
+        targetArea: "frontend",
+        parentTaskId,
+        acceptanceCriteria: [
+          `Workflow chính thể hiện được: ${requirements.oneLineSummary}`,
+          "Các trạng thái nhập liệu, kết quả, lỗi và chờ xử lý được xác định rõ."
+        ]
+      })
+    );
+  }
+
+  if (architecture.backend?.recommended) {
+    tasks.push(
+      createTaskDraft({
+        title: "Xây dựng runtime nghiệp vụ cần thiết",
+        objective: "Tạo lớp xử lý nghiệp vụ/tác vụ nền đúng với kiến trúc đã chọn, chỉ bao gồm phần thật sự cần cho MVP.",
+        taskType: "build_runtime_logic",
+        targetArea: "backend",
+        parentTaskId,
+        acceptanceCriteria: [
+          "Runtime xử lý được workflow chính và trả lỗi có kiểm soát.",
+          "Secret, token hoặc cấu hình tích hợp không bị hardcode trong code."
+        ]
+      })
+    );
+  }
+
+  if (architecture.api?.recommended) {
+    tasks.push(
+      createTaskDraft({
+        title: "Đặc tả hợp đồng API hoặc webhook",
+        objective: "Xác định endpoint, payload, response và lỗi cho các luồng cần giao tiếp qua API/webhook.",
+        taskType: "define_api_contract",
+        targetArea: "api",
+        parentTaskId,
+        acceptanceCriteria: [
+          "Mỗi endpoint/webhook có input, output và mã lỗi chính.",
+          "Hợp đồng API khớp với workflow và không tạo CRUD thừa."
+        ]
+      })
+    );
+  }
+
+  if (architecture.database?.recommended) {
+    tasks.push(
+      createTaskDraft({
+        title: "Thiết kế lưu trữ cho trạng thái cần bền vững",
+        objective: "Xác định dữ liệu cần lưu, vòng đời dữ liệu và ràng buộc tối thiểu cho MVP.",
+        taskType: "design_persistence",
+        targetArea: "database",
+        parentTaskId,
+        acceptanceCriteria: [
+          "Chỉ lưu dữ liệu có lý do rõ trong yêu cầu hoặc workflow.",
+          "Có chiến lược migrate/seed hoặc dữ liệu mẫu phục vụ kiểm thử."
+        ]
+      })
+    );
+  }
+
+  return tasks.slice(0, 3);
+}
+
+function integrationDrivenTasks(
+  project: Project,
+  requirements: Requirements,
+  architecture: ArchitecturePlan,
+  parentTaskId: string
+): TaskDraft[] {
+  if (!architecture.integrations.length) return [];
+  const integrations = architecture.integrations.slice(0, 3);
+  return [
+    createTaskDraft({
+      title: `Kết nối tích hợp: ${integrations.join(", ")}`,
+      objective: `Thiết kế luồng xác thực, gọi API/webhook và xử lý lỗi cho các tích hợp liên quan đến ý tưởng: ${compactIdea(project.rawIdea)}.`,
+      taskType: `connect_${taskSlug(integrations.join("_"))}`,
+      targetArea: "integrations",
+      parentTaskId,
+      acceptanceCriteria: [
+        `Tích hợp phục vụ trực tiếp: ${requirements.oneLineSummary}`,
+        "Có chiến lược retry/rate limit hoặc fallback khi dịch vụ ngoài lỗi.",
+        "Không lưu token thật trong source code."
+      ]
+    })
+  ];
+}
+
+function validationTask(project: Project, intent: IntentAnalysis, requirements: Requirements, parentTaskId: string): TaskDraft {
+  return createTaskDraft({
+    title: "Kiểm chứng MVP theo tiêu chí thành công",
+    objective: `Chạy hoặc mô phỏng luồng chính của ${typeLabels[intent.projectType]} từ ý tưởng "${compactIdea(project.rawIdea)}" và ghi lại kết quả.`,
+    taskType: "validate_mvp_flow",
+    targetArea: "quality",
+    parentTaskId,
+    acceptanceCriteria: [
+      ...requirements.successMetrics.slice(0, 3),
+      "Có ghi chú lỗi còn lại và bước sửa tiếp theo nếu chưa đạt."
+    ]
+  });
+}
+
+function createTaskDraft(input: {
+  title: string;
+  objective: string;
+  taskType: string;
+  targetArea: string;
+  parentTaskId: string;
+  acceptanceCriteria: string[];
+  dependencies?: string[];
+  priority?: number;
+}): TaskDraft {
+  return {
+    id: createId(),
+    title: input.title,
+    objective: input.objective,
+    taskType: input.taskType,
+    targetArea: input.targetArea,
+    parentTaskId: input.parentTaskId,
+    acceptanceCriteria: input.acceptanceCriteria,
+    dependencies: input.dependencies ?? [],
+    status: "pending",
+    priority: input.priority ?? 1
+  };
+}
+
+function dedupeTasks(tasks: TaskDraft[]) {
+  const seen = new Set<string>();
+  return tasks.filter((task) => {
+    const key = `${task.taskType}:${task.targetArea}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function collectFeatureStrings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap((item) => collectFeatureStrings(item));
+  if (value && typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).flatMap((item) => collectFeatureStrings(item));
+  }
+  return [];
+}
+
+function inferTargetAreaFromFeature(feature: string) {
+  const normalized = normalize(feature);
+  if (/screen|ui|hero|cta|section|scene|gameplay|asset|mobile|dashboard/.test(normalized)) return "experience";
+  if (/api|webhook|provider|adapter|integration|command|event|trigger|action/.test(normalized)) return "runtime";
+  if (/database|storage|state|history|log|audit|backtest|score/.test(normalized)) return "data";
+  if (/prompt|schema|eval|guardrail|ai/.test(normalized)) return "ai_runtime";
+  return "core";
+}
+
+function taskSlug(value: string) {
+  return normalize(value)
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48) || "scope";
+}
+
+function compactIdea(rawIdea: string) {
+  const compact = rawIdea.replace(/\s+/g, " ").trim();
+  return `${compact.slice(0, 120)}${compact.length > 120 ? "..." : ""}`;
 }
 
 function contextualTasks(

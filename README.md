@@ -46,9 +46,13 @@ MVP đang dùng bộ chạy heuristic và JSON-file storage trong `data/db.json`
 AI_AGENT_DB_PATH=/đường/dẫn/db.json
 AI_AGENT_WORKSPACE_ROOT=/đường/dẫn/workspaces
 AI_AGENT_EXECUTOR=file-edits | codex
-AI_AGENT_LLM_PROVIDER=mock | openai
+AI_AGENT_LLM_PROVIDER=auto | mock
+AI_AGENT_CODEX_API_KEY=...   # ưu tiên; có thể dùng CODEX_API_KEY hoặc OPENAI_API_KEY
+AI_AGENT_CODEX_API_MODEL=gpt-5.4-mini
 OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-5.4-mini
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
 AI_AGENT_CODEX_COMMAND=codex
 AI_AGENT_CODEX_MODEL=gpt-5.5
 AI_AGENT_CODEX_PROFILE=...
@@ -64,6 +68,12 @@ AI_AGENT_STATIC_FILE_EDITS='{"summary":"...","edits":[...]}'
 Thực thi chỉ được chạy khi phiên bản mới nhất của các tài liệu bắt buộc đã được duyệt. Mỗi kết quả thực thi lưu `approvedArtifactSnapshot`; Agent đánh giá sẽ báo lỗi nếu có kế hoạch mới hơn xuất hiện sau lần thực thi.
 
 Với `existing_project`, `codebase_context` cũng là tài liệu bắt buộc phải duyệt. Agent đánh giá sẽ chạy sandbox trên chính đường dẫn nguồn của repo, không phải thư mục bundle.
+
+Bộ chọn provider luôn ưu tiên Codex theo thứ tự: Codex CLI nếu đã đăng nhập, Codex/OpenAI API nếu có key, rồi mới fallback sang Gemini khi Codex thiếu token, hết quota hoặc lỗi kết nối. Nếu không có key thật, hệ thống dùng mock để vẫn tạo được blueprint nhưng không sửa code thật.
+
+Các tài liệu lập kế hoạch chính (`intent_analysis`, `requirements`, `feature_discovery`, `architecture_plan`, `roadmap`, `task_plan`, `execution_prompt`) đều ưu tiên sinh bằng Codex/OpenAI API hoặc Gemini fallback. Khi không có provider thật, hệ thống mới dùng heuristic động theo ý tưởng, loại dự án, feature, kiến trúc và tích hợp; không còn nhân task theo phase cứng cho mọi dự án.
+
+Tab nhật ký hiển thị theo dạng chat terminal: yêu cầu gửi vào agent, output AI/provider trả về, thời điểm log và thời gian agent đang chạy.
 
 Bộ thực thi sửa code gọi provider để lấy danh sách chỉnh sửa file dạng JSON:
 

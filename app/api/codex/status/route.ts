@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { apiOk } from "@/lib/api";
+import { getPreferredProviderStatus } from "@/packages/orchestrator/llm-provider";
 
 const execFileAsync = promisify(execFile);
 
@@ -8,14 +9,21 @@ export async function GET() {
   const command = process.env.AI_AGENT_CODEX_COMMAND || "codex";
   const version = await run(command, ["--version"]);
   const login = await run(command, ["login", "status"]);
+  const providerStatus = getPreferredProviderStatus();
+  const loggedIn = login.exitCode === 0 && /Logged in/i.test(`${login.stdout}\n${login.stderr}`);
 
   return apiOk({
     command,
     available: version.exitCode === 0,
     version: version.stdout.trim() || version.stderr.trim(),
-    loggedIn: login.exitCode === 0 && /Logged in/i.test(`${login.stdout}\n${login.stderr}`),
+    loggedIn,
     loginStatus: formatLoginStatus((login.stdout || login.stderr).trim()),
-    executorEnabled: process.env.AI_AGENT_EXECUTOR === "codex" || (version.exitCode === 0 && /Logged in/i.test(`${login.stdout}\n${login.stderr}`))
+    executorEnabled:
+      process.env.AI_AGENT_EXECUTOR === "codex" ||
+      (version.exitCode === 0 && loggedIn) ||
+      providerStatus.codexApiConfigured ||
+      providerStatus.geminiConfigured,
+    ...providerStatus
   });
 }
 
