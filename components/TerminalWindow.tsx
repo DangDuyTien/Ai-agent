@@ -135,8 +135,7 @@ function detailForLog(log: TerminalLog) {
 }
 
 function stringifyDetail(value: unknown) {
-  const text = typeof value === "string" ? value : JSON.stringify(value ?? {}, null, 2);
-  return text.length > 14000 ? `${text.slice(0, 14000)}\n...[đã cắt bớt]` : text;
+  return typeof value === "string" ? value : JSON.stringify(value ?? {}, null, 2);
 }
 
 function roleForKind(kind: string, level: string) {

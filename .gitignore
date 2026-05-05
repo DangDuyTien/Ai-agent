@@ -7,6 +7,7 @@ coverage
 .env.local
 data/db.json
 workspaces/projects/*
+workspaces/uploads/*
 !.gitkeep
 npm-debug.log*
 *.tsbuildinfo

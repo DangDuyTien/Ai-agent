@@ -375,7 +375,7 @@ export function runArchitecturePlanner(
         },
         runtime: ["Runtime ứng dụng", "Điều phối agent", "Log có cấu trúc"],
         integrations: inferIntegrations(project.rawIdea),
-        risks: ["Phạm vi phình to", "Schema tài liệu quá cứng", "Thiếu cổng duyệt trước khi thực thi"]
+        risks: ["Cần chốt ranh giới phạm vi trong cổng duyệt trước khi thực thi", "Schema tài liệu quá cứng", "Thiếu cổng duyệt trước khi thực thi"]
       };
   }
 }
@@ -446,7 +446,7 @@ export function runPromptComposer(
       "",
       "Đầu ra mong đợi:",
       "1. Suy nghĩ từng bước (Chain of Thought): Phân tích file nào cần tạo/sửa, mục tiêu là gì, dữ liệu đầu vào/đầu ra ra sao trước khi viết code.",
-      "2. Triển khai tập file NHỎ NHẤT có thể để hoàn thành riêng nhiệm vụ vi mô này. KHÔNG làm lố sang scope của nhiệm vụ khác.",
+      "2. Triển khai tập file NHỎ NHẤT có thể để hoàn thành riêng nhiệm vụ vi mô này. KHÔNG làm lố sang phạm vi của nhiệm vụ khác.",
       "3. Trả về chính xác các file đã sửa/tạo và giải thích ngắn gọn.",
       "4. Nếu yêu cầu còn mơ hồ, nêu giả định cụ thể trước khi code."
     ].join("\n");
@@ -865,7 +865,7 @@ function taskSlug(value: string) {
   return normalize(value)
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
-    .slice(0, 48) || "scope";
+    .slice(0, 48) || "pham_vi";
 }
 
 function compactIdea(rawIdea: string) {

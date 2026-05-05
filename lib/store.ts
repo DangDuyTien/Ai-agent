@@ -221,11 +221,35 @@ export async function finishAgentRun(runId: string, output: unknown, error?: str
     if (!run) {
       throw new Error(`Không tìm thấy lượt chạy agent ${runId}`);
     }
+    if (run.status !== "running") {
+      return run;
+    }
     run.status = error ? "failed" : "completed";
     run.output = output;
     run.error = error;
     run.finishedAt = now();
     return run;
+  });
+}
+
+export async function cancelRunningAgentRuns(projectId: string, reason = "Đã hủy bởi người dùng"): Promise<AgentRun[]> {
+  return mutateDb((db) => {
+    const finishedAt = now();
+    const cancelled = db.agentRuns.filter((item) => item.projectId === projectId && item.status === "running");
+    cancelled.forEach((run) => {
+      run.status = "failed";
+      run.error = reason;
+      run.finishedAt = finishedAt;
+    });
+
+    db.tasks
+      .filter((task) => task.projectId === projectId && task.status === "running")
+      .forEach((task) => {
+        task.status = "blocked";
+        task.updatedAt = finishedAt;
+      });
+
+    return cancelled;
   });
 }
 

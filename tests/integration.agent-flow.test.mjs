@@ -60,6 +60,18 @@ test("analyze -> approve latest -> execute -> review, then block stale approval 
 
   await waitForServer(serverOutput);
 
+  const uploadForm = new FormData();
+  uploadForm.append(
+    "files",
+    new Blob([JSON.stringify({ scripts: { test: "node -e \"process.exit(0)\"" } }, null, 2)]),
+    "sample-app/package.json"
+  );
+  uploadForm.append("files", new Blob(["# Sample app\n"]), "sample-app/README.md");
+  const uploaded = await multipartPost("/api/uploads/codebase", uploadForm);
+  assert.equal(uploaded.fileCount, 2);
+  assert.equal(path.dirname(uploaded.sourcePath), path.join(tempRoot, "workspaces", "uploads"));
+  assert.match(await readFile(path.join(uploaded.sourcePath, "package.json"), "utf8"), /scripts/);
+
   const created = await post("/api/projects", {
     rawIdea: "Tao bot Telegram nhan lenh /report, lay du lieu Google Sheets va gui bao cao hang ngay cho team sale."
   });
@@ -195,6 +207,19 @@ async function request(pathname, init = {}) {
     status: response.status,
     data
   };
+}
+
+async function multipartPost(pathname, formData) {
+  const response = await fetch(`${baseUrl}${pathname}`, {
+    method: "POST",
+    body: formData
+  });
+  const text = await response.text();
+  const data = JSON.parse(text);
+  if (!response.ok) {
+    throw new Error(`${pathname} failed ${response.status}: ${JSON.stringify(data)}`);
+  }
+  return data;
 }
 
 function latestArtifacts(artifacts) {

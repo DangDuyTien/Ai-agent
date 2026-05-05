@@ -69,11 +69,17 @@ Thực thi chỉ được chạy khi phiên bản mới nhất của các tài l
 
 Với `existing_project`, `codebase_context` cũng là tài liệu bắt buộc phải duyệt. Agent đánh giá sẽ chạy sandbox trên chính đường dẫn nguồn của repo, không phải thư mục bundle.
 
+Khi sửa repo có sẵn, có thể bấm `Chọn thư mục` trong dashboard để upload thư mục dự án vào `AI_AGENT_WORKSPACE_ROOT/uploads`, hoặc `workspaces/uploads` nếu chưa cấu hình biến môi trường. Hệ thống tự điền `sourcePath` của bản copy này để agent quét mã nguồn; các thư mục nặng như `.git`, `node_modules`, `.next`, `dist`, `build`, `coverage` được bỏ qua khi upload.
+
 Bộ chọn provider luôn ưu tiên Codex theo thứ tự: Codex CLI nếu đã đăng nhập, Codex/OpenAI API nếu có key, rồi mới fallback sang Gemini khi Codex thiếu token, hết quota hoặc lỗi kết nối. Nếu không có key thật, hệ thống dùng mock để vẫn tạo được blueprint nhưng không sửa code thật.
 
 Các tài liệu lập kế hoạch chính (`intent_analysis`, `requirements`, `feature_discovery`, `architecture_plan`, `roadmap`, `task_plan`, `execution_prompt`) đều ưu tiên sinh bằng Codex/OpenAI API hoặc Gemini fallback. Khi không có provider thật, hệ thống mới dùng heuristic động theo ý tưởng, loại dự án, feature, kiến trúc và tích hợp; không còn nhân task theo phase cứng cho mọi dự án.
 
 Tab nhật ký hiển thị theo dạng chat terminal: yêu cầu gửi vào agent, output AI/provider trả về, thời điểm log và thời gian agent đang chạy.
+
+Khi tạo `execution_prompt`, hệ thống không yêu cầu AI sinh tất cả prompt trong một lần. Prompt Composer gọi provider theo từng tác vụ nhỏ, sau đó ghép kết quả thành danh sách prompt đã duyệt để giảm quá tải cho model yếu.
+
+Với dự án đang chọn, có thể nhập yêu cầu ở khối `Phát triển tiếp`. Hệ thống sẽ append yêu cầu mới vào bối cảnh dự án, giữ codebase hiện có nếu có, rồi chạy lại phân tích để tạo lộ trình/tác vụ/prompt cho phần phát triển bổ sung.
 
 Bộ thực thi sửa code gọi provider để lấy danh sách chỉnh sửa file dạng JSON:
 
@@ -108,6 +114,7 @@ Khi hết token hoặc muốn đổi tài khoản, chạy `codex logout` rồi `
 ## API chính
 
 ```txt
+POST /api/uploads/codebase
 POST /api/projects
 POST /api/projects/:projectId/codebase
 POST /api/projects/:projectId/analyze

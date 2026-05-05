@@ -21,6 +21,7 @@ import {
   Wand2
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent, ComponentType, InputHTMLAttributes } from "react";
 import type {
   ArtifactType,
   Project,
@@ -47,7 +48,14 @@ type CodexStatus = {
   fallbackProvider: string;
 };
 
-const tabs: Array<{ id: TabId; label: string; icon: React.ComponentType<{ size?: number }> }> = [
+type DirectoryFile = File & { webkitRelativePath?: string };
+
+const directoryPickerProps = {
+  webkitdirectory: "",
+  directory: ""
+} as InputHTMLAttributes<HTMLInputElement>;
+
+const tabs: Array<{ id: TabId; label: string; icon: ComponentType<{ size?: number }> }> = [
   { id: "analysis", label: "Phân tích", icon: Sparkles },
   { id: "codebase", label: "Mã nguồn", icon: FolderOpen },
   { id: "features", label: "Chức năng", icon: Layers3 },
@@ -98,6 +106,8 @@ export default function HomePage() {
   const [codexError, setCodexError] = useState("");
   const [autoPilot, setAutoPilot] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [continuationIdea, setContinuationIdea] = useState("");
+  const [uploadingCodebase, setUploadingCodebase] = useState(false);
 
   useEffect(() => {
     void loadProjects();
@@ -124,6 +134,7 @@ export default function HomePage() {
     };
   }, [approvalTypes, latestArtifacts]);
   const approvalPercent = approvals.total > 0 ? Math.round((approvals.done / approvals.total) * 100) : 0;
+  const canCancelExecution = Boolean(blueprint);
 
   async function loadProjects() {
     const response = await fetch("/api/projects", { cache: "no-store" });
@@ -157,6 +168,42 @@ export default function HomePage() {
       setCodexError(error instanceof Error ? toVietnameseMessage(error.message) : "Không đọc được trạng thái Codex CLI.");
     } finally {
       setCodexBusy(false);
+    }
+  }
+
+  async function uploadCodebaseFolder(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const files = Array.from(input.files ?? []);
+    if (files.length === 0) return;
+
+    setUploadingCodebase(true);
+    setProjectMode("existing_project");
+    setNotice("Đang upload thư mục dự án...");
+    try {
+      const formData = new FormData();
+      for (const file of files) {
+        const relativePath = (file as DirectoryFile).webkitRelativePath || file.name;
+        formData.append("files", file, relativePath);
+      }
+
+      const response = await fetch("/api/uploads/codebase", {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Upload thư mục thất bại.");
+      }
+
+      setSourcePath(data.sourcePath);
+      const skippedText =
+        data.skippedCount > 0 ? ` Bỏ qua ${data.skippedCount} file/thư mục nặng hoặc vượt giới hạn.` : "";
+      setNotice(`Đã upload ${data.fileCount} file vào workspace. Đường dẫn đã được tự điền.${skippedText}`);
+    } catch (error) {
+      setNotice(error instanceof Error ? toVietnameseMessage(error.message) : "Upload thư mục thất bại.");
+    } finally {
+      setUploadingCodebase(false);
+      input.value = "";
     }
   }
 
@@ -260,6 +307,41 @@ export default function HomePage() {
     }
   }
 
+  async function continueDevelopment() {
+    if (!blueprint) return;
+    const nextRequest = continuationIdea.trim();
+    if (nextRequest.length < 8) return;
+
+    setBusy(true);
+    setIsExecuting(true);
+    setNotice("");
+    setActiveTab("logs");
+    const projectId = blueprint.project.id;
+    const interval = setInterval(() => {
+      void loadBlueprint(projectId);
+    }, 1000);
+
+    try {
+      const nextRawIdea = buildContinuationRawIdea(blueprint.project.rawIdea, nextRequest);
+      await apiPatch(`/api/projects/${projectId}`, { rawIdea: nextRawIdea });
+      if (blueprint.project.mode === "existing_project" && blueprint.project.sourcePath && !blueprint.codebaseContext) {
+        await apiPost(`/api/projects/${projectId}/codebase`, { sourcePath: blueprint.project.sourcePath });
+      }
+      const analyzed = await apiPost(`/api/projects/${projectId}/analyze`, { autoAssume });
+      setBlueprint(analyzed.blueprint);
+      setContinuationIdea("");
+      await loadProjects();
+      setNotice("Đã thêm yêu cầu phát triển tiếp và chạy lại luồng agent.");
+    } catch (error) {
+      setNotice(error instanceof Error ? toVietnameseMessage(error.message) : "Không phát triển tiếp được dự án.");
+    } finally {
+      clearInterval(interval);
+      await loadBlueprint(projectId);
+      setIsExecuting(false);
+      setBusy(false);
+    }
+  }
+
   function openEditor(artifact?: ProjectArtifact) {
     if (!artifact) return;
     setEditorArtifactId(artifact.id);
@@ -344,14 +426,17 @@ export default function HomePage() {
   async function cancelExecution() {
     if (!blueprint) return;
     setBusy(true);
+    setIsExecuting(true);
+    setActiveTab("logs");
     setNotice("Đang hủy tiến trình...");
     try {
       await apiPost(`/api/projects/${blueprint.project.id}/cancel`, {});
       await loadBlueprint(blueprint.project.id);
-      setNotice("Đã gửi lệnh hủy. Hãy đợi vài giây để luồng dừng hẳn.");
+      setNotice("Đã hủy các agent run đang treo.");
     } catch (error) {
       setNotice(error instanceof Error ? toVietnameseMessage(error.message) : "Hủy thất bại.");
     } finally {
+      setIsExecuting(false);
       setBusy(false);
     }
   }
@@ -418,12 +503,26 @@ export default function HomePage() {
             placeholder="Nhập ý tưởng thô về web app, bot, game, công cụ tự động hóa..."
           />
           {projectMode === "existing_project" ? (
-            <input
-              className="pathInput"
-              value={sourcePath}
-              onChange={(event) => setSourcePath(event.target.value)}
-              placeholder="/đường/dẫn/tới/repo"
-            />
+            <div className="pathPickerRow">
+              <input
+                className="pathInput"
+                value={sourcePath}
+                onChange={(event) => setSourcePath(event.target.value)}
+                placeholder="/đường/dẫn/tới/repo"
+                disabled={uploadingCodebase}
+              />
+              <label className={`secondary uploadButton ${uploadingCodebase ? "disabled" : ""}`}>
+                {uploadingCodebase ? <Loader2 className="spin" size={16} /> : <FolderOpen size={16} />}
+                {uploadingCodebase ? "Đang upload" : "Chọn thư mục"}
+                <input
+                  {...directoryPickerProps}
+                  type="file"
+                  multiple
+                  onChange={uploadCodebaseFolder}
+                  disabled={uploadingCodebase}
+                />
+              </label>
+            </div>
           ) : null}
           <label className="checkLine">
             <input type="checkbox" checked={autoAssume} onChange={(event) => setAutoAssume(event.target.checked)} />
@@ -436,7 +535,12 @@ export default function HomePage() {
           <button
             className="primary"
             onClick={createAndAnalyze}
-            disabled={busy || rawIdea.trim().length < 8 || (projectMode === "existing_project" && !sourcePath.trim())}
+            disabled={
+              busy ||
+              uploadingCodebase ||
+              rawIdea.trim().length < 8 ||
+              (projectMode === "existing_project" && !sourcePath.trim())
+            }
           >
             {busy ? <Loader2 className="spin" size={16} /> : <Send size={16} />}
             {projectMode === "existing_project" ? "Quét và lập kế hoạch" : "Tạo blueprint"}
@@ -449,6 +553,23 @@ export default function HomePage() {
           loading={codexBusy}
           onRefresh={() => void loadCodexStatus()}
         />
+
+        {blueprint ? (
+          <section className="ideaPanel">
+            <label htmlFor="continuationIdea">Phát triển tiếp</label>
+            <textarea
+              id="continuationIdea"
+              value={continuationIdea}
+              onChange={(event) => setContinuationIdea(event.target.value)}
+              rows={5}
+              placeholder="Nhập chức năng mới, ý tưởng bổ sung hoặc yêu cầu sửa tiếp cho dự án đang chọn..."
+            />
+            <button className="secondary" onClick={continueDevelopment} disabled={busy || continuationIdea.trim().length < 8}>
+              {busy ? <Loader2 className="spin" size={16} /> : <RefreshCw size={16} />}
+              Thêm vào dự án và phân tích lại
+            </button>
+          </section>
+        ) : null}
 
         <section className="projectList">
           <div className="sectionTitle">Dự án</div>
@@ -508,7 +629,13 @@ export default function HomePage() {
               <ClipboardList size={16} />
               Đánh giá
             </button>
-            <button className="secondary" onClick={cancelExecution} disabled={!busy || !blueprint || blueprint.project.status !== "executing"} style={{ color: "#ff5f56", borderColor: "#ff5f56" }}>
+            <button
+              className="secondary"
+              onClick={cancelExecution}
+              disabled={!canCancelExecution}
+              title="Dừng tiến trình hoặc dọn agent run bị treo của dự án đang chọn"
+              style={{ color: "#ff5f56", borderColor: "#ff5f56" }}
+            >
               <div style={{ width: "12px", height: "12px", backgroundColor: "#ff5f56", borderRadius: "2px" }} />
               Dừng chạy
             </button>
@@ -989,6 +1116,20 @@ function getLatestArtifacts(artifacts: ProjectArtifact[]) {
 
 function safeJson(value: unknown) {
   return JSON.stringify(value ?? {}, null, 2);
+}
+
+function buildContinuationRawIdea(currentRawIdea: string, nextRequest: string) {
+  const marker = `Yêu cầu phát triển tiếp (${new Date().toISOString()}):`;
+  const continuationBlock = [marker, nextRequest].join("\n");
+  const maxLength = 7900;
+  const reserved = continuationBlock.length + 4;
+  const maxCurrentLength = Math.max(1200, maxLength - reserved);
+  const current =
+    currentRawIdea.length > maxCurrentLength
+      ? `${currentRawIdea.slice(0, Math.floor(maxCurrentLength * 0.55))}\n...\n${currentRawIdea.slice(-Math.floor(maxCurrentLength * 0.35))}`
+      : currentRawIdea;
+
+  return [current.trim(), continuationBlock].filter(Boolean).join("\n\n").slice(0, maxLength);
 }
 
 function formatProjectType(value: string) {

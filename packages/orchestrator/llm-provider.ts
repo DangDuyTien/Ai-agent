@@ -101,6 +101,7 @@ export async function runIntentAnalysisProvider(input: {
     rules: [
       "Phân loại theo tín hiệu thật trong ý tưởng, không mặc định web_app nếu không có tín hiệu web/dashboard/browser.",
       "Nếu mode là existing_project, cân nhắc codebase_context nhưng vẫn ưu tiên ý tưởng người dùng.",
+      "Nếu rawIdea có các khối 'Yêu cầu phát triển tiếp', xem đó là yêu cầu mới nhất cần ưu tiên trong lần phân tích này.",
       "missingQuestions chỉ gồm câu thật sự chặn quyết định lớn, tối đa 3 câu."
     ],
     context: {
@@ -124,6 +125,7 @@ export async function runRequirementsProvider(input: {
       '{"projectName":"...","oneLineSummary":"...","targetUsers":["..."],"problemStatement":"...","primaryGoals":["..."],"nonGoals":["..."],"constraints":["..."],"successMetrics":["..."]}',
     rules: [
       "Yêu cầu phải xuất phát trực tiếp từ ý tưởng người dùng và intent_analysis.",
+      "Nếu rawIdea có các khối 'Yêu cầu phát triển tiếp', giữ bối cảnh dự án cũ nhưng đưa yêu cầu mới nhất vào primaryGoals.",
       "Không thêm API, database, auth, dashboard hoặc CRUD nếu ý tưởng/intent không cần.",
       "Nếu là existing_project, primaryGoals/constraints phải nêu hướng sửa/nâng cấp codebase hiện có."
     ],
@@ -150,9 +152,10 @@ export async function runFeatureDiscoveryProvider(input: {
       '{"coreFeatures":["..."],"optionalFeatures":["..."],"typeSpecific":{"domainKey":["..."]},"excludedByDesign":["..."]}',
     rules: [
       "Đề xuất feature theo domain của ý tưởng, không dùng danh sách chung cố định.",
+      "Nếu đây là yêu cầu phát triển tiếp, coreFeatures phải tập trung vào chức năng bổ sung/sửa đổi mới nhất.",
       "coreFeatures là phần MVP bắt buộc; optionalFeatures là phần có thể làm sau.",
       "typeSpecific phải là object có khóa phù hợp loại dự án, ví dụ commands, gameplayLoop, triggers, aiFlow, screens, strategy.",
-      "excludedByDesign nêu rõ những thứ không làm để tránh phình scope."
+      "excludedByDesign nêu rõ những thứ không làm để tránh mở rộng phạm vi ngoài yêu cầu."
     ],
     context: {
       rawIdea: input.project.rawIdea,
@@ -180,6 +183,7 @@ export async function runArchitecturePlanProvider(input: {
     rules: [
       "frontend/backend/api/database chỉ recommended=true khi có lý do rõ từ ý tưởng, requirements hoặc codebase.",
       "Không mặc định dùng Next.js, API hoặc database nếu dự án không cần.",
+      "Nếu đây là yêu cầu phát triển tiếp, ưu tiên mở rộng kiến trúc hiện có thay vì thiết kế lại từ đầu.",
       "Với existing_project, ưu tiên stack/script/framework đang có và nêu rủi ro khi phải đổi stack.",
       "runtime, integrations và risks phải cụ thể theo dự án."
     ],
@@ -236,6 +240,77 @@ async function runStructuredPlanningProvider<TContent>(input: {
   });
 }
 
+async function runExecutionPromptForTaskProvider(input: {
+  project: Project;
+  requirements: Requirements;
+  features: FeatureDiscovery;
+  architecture: ArchitecturePlan;
+  tasks: ProjectTask[];
+  task: ProjectTask;
+  taskIndex: number;
+  totalTasks: number;
+  codebaseContext?: CodebaseContext;
+}): Promise<ProviderArtifactResult<ExecutionPrompt>> {
+  return runStructuredPlanningProvider({
+    agentLabel: `Prompt Composer task ${input.taskIndex + 1}/${input.totalTasks}`,
+    schemaDescription: '{"taskId":"exact task id","title":"...","prompt":"full Vietnamese execution prompt","reviewChecklist":["..."]}',
+    rules: [
+      "Chỉ tạo prompt cho đúng một task trong context.task, không tạo prompt cho task khác.",
+      "Giữ nguyên taskId.",
+      "Prompt phải đủ ngữ cảnh để agent lập trình triển khai riêng task này mà không cần đọc toàn bộ kế hoạch.",
+      "Prompt phải nêu rõ ranh giới: làm đúng task hiện tại, không làm sang task trước/sau.",
+      "Nếu task phụ thuộc task khác, chỉ nhắc dependency như bối cảnh, không yêu cầu triển khai lại dependency.",
+      "Với existing_project, prompt phải nhắc giữ framework/script/quy ước codebase hiện có."
+    ],
+    context: {
+      rawIdea: input.project.rawIdea,
+      mode: input.project.mode,
+      sourcePath: input.project.sourcePath,
+      requirementsSummary: {
+        projectName: input.requirements.projectName,
+        oneLineSummary: input.requirements.oneLineSummary,
+        primaryGoals: input.requirements.primaryGoals,
+        constraints: input.requirements.constraints,
+        successMetrics: input.requirements.successMetrics
+      },
+      featureSummary: {
+        coreFeatures: input.features.coreFeatures,
+        excludedByDesign: input.features.excludedByDesign
+      },
+      architectureSummary: {
+        overview: input.architecture.overview,
+        frontend: input.architecture.frontend,
+        backend: input.architecture.backend,
+        api: input.architecture.api,
+        database: input.architecture.database,
+        runtime: input.architecture.runtime,
+        integrations: input.architecture.integrations
+      },
+      taskOrder: {
+        current: input.taskIndex + 1,
+        total: input.totalTasks,
+        allTaskTitles: input.tasks.map((task, index) => ({
+          order: index + 1,
+          taskId: task.id,
+          title: task.title,
+          taskType: task.taskType
+        }))
+      },
+      task: {
+        id: input.task.id,
+        title: input.task.title,
+        objective: input.task.objective,
+        taskType: input.task.taskType,
+        targetArea: input.task.targetArea,
+        acceptanceCriteria: input.task.acceptanceCriteria,
+        dependencies: input.task.dependencies
+      },
+      codebaseContext: summarizeCodebaseContext(input.codebaseContext)
+    },
+    parse: (value) => parseExecutionPromptForTask(value, input.task)
+  });
+}
+
 export async function runExecutionPromptProvider(input: {
   project: Project;
   requirements: Requirements;
@@ -244,35 +319,39 @@ export async function runExecutionPromptProvider(input: {
   tasks: ProjectTask[];
   codebaseContext?: CodebaseContext;
 }): Promise<ProviderArtifactResult<ExecutionPrompt[]>> {
-  return runStructuredPlanningProvider({
-    agentLabel: "Prompt Composer",
-    schemaDescription:
-      '{"prompts":[{"taskId":"exact task id","title":"...","prompt":"full Vietnamese execution prompt","reviewChecklist":["..."]}]}',
-    rules: [
-      "Tạo đúng một prompt cho mỗi task đầu vào và giữ nguyên taskId.",
-      "Prompt phải đủ ngữ cảnh để agent lập trình triển khai riêng task đó.",
-      "Không dùng template chung; mỗi prompt phải bám vào objective, targetArea và acceptanceCriteria của task.",
-      "Với existing_project, prompt phải nhắc giữ framework/script/quy ước codebase hiện có."
-    ],
-    context: {
-      rawIdea: input.project.rawIdea,
-      mode: input.project.mode,
-      sourcePath: input.project.sourcePath,
-      requirements: input.requirements,
-      features: input.features,
-      architecture: input.architecture,
-      tasks: input.tasks.map((task) => ({
-        id: task.id,
-        title: task.title,
-        objective: task.objective,
-        taskType: task.taskType,
-        targetArea: task.targetArea,
-        acceptanceCriteria: task.acceptanceCriteria
-      })),
-      codebaseContext: summarizeCodebaseContext(input.codebaseContext)
-    },
-    parse: (value) => parseExecutionPromptPlan(value, input.tasks)
-  });
+  const chunks: Array<{ provider: string; mode: string; output: string; prompt: ExecutionPrompt }> = [];
+
+  for (let index = 0; index < input.tasks.length; index += 1) {
+    const task = input.tasks[index];
+    const result = await runExecutionPromptForTaskProvider({
+      ...input,
+      task,
+      taskIndex: index,
+      totalTasks: input.tasks.length
+    });
+    chunks.push({
+      provider: result.provider,
+      mode: result.mode,
+      output: result.output,
+      prompt: result.content
+    });
+  }
+
+  const first = chunks[0];
+  return {
+    provider: first?.provider ?? "mock",
+    mode: first?.mode ?? "none",
+    output: chunks
+      .map((chunk, index) =>
+        [
+          `--- Prompt chunk ${index + 1}/${chunks.length}: ${chunk.prompt.title} ---`,
+          `Provider: ${chunk.provider} (${chunk.mode})`,
+          chunk.output
+        ].join("\n")
+      )
+      .join("\n\n"),
+    content: chunks.map((chunk) => chunk.prompt)
+  };
 }
 
 export async function runFileEditProvider(input: {
@@ -704,6 +783,7 @@ function buildTaskPlanningPrompt(input: {
     "",
     "Quy tắc:",
     "- Sinh 3-7 tác vụ có ý nghĩa theo đúng ý tưởng, loại dự án, feature và kiến trúc.",
+    "- Nếu rawIdea có 'Yêu cầu phát triển tiếp', task plan phải tập trung vào phần mới cần phát triển, không lập lại toàn bộ dự án từ đầu.",
     "- Không tạo chuỗi phase cứng như khởi tạo file/types/mock/static/data-access/edge-case cho mọi dự án.",
     "- Không mặc định có web UI, API, auth hoặc database nếu tài liệu kiến trúc không khuyến nghị.",
     "- Nếu có codebase_context, tác vụ đầu nên chỉ rõ vùng codebase cần rà soát/thay đổi.",
@@ -814,6 +894,29 @@ function parseExecutionPromptPlan(value: unknown, tasks: ProjectTask[]): Executi
   }
 
   return prompts;
+}
+
+function parseExecutionPromptForTask(value: unknown, task: ProjectTask): ExecutionPrompt {
+  if (!isRecord(value)) {
+    throw new Error(`Provider không trả về prompt hợp lệ cho task ${task.title}.`);
+  }
+
+  const prompt = executionPromptContentSchema.parse({
+    taskId: task.id,
+    title: readString(value.title) || task.title,
+    prompt: readString(value.prompt),
+    reviewChecklist: readStringArray(value.reviewChecklist, [
+      "Kết quả bám sát task đã duyệt.",
+      "Tiêu chí nghiệm thu được đáp ứng.",
+      "Không thêm phạm vi ngoài kế hoạch."
+    ])
+  });
+
+  if (!prompt.prompt.trim()) {
+    throw new Error(`Prompt thực thi bị rỗng cho task ${task.title}.`);
+  }
+
+  return prompt;
 }
 
 function normalizeRoadmapItem(value: unknown): RoadmapMilestone | undefined {
