@@ -1,0 +1,493 @@
+{
+  "project": {
+    "id": "f60d8d95-6776-4fd0-bc52-caf363ae9210",
+    "name": "Xây dựng hệ thống AI Agent tổng",
+    "rawIdea": "Xây dựng hệ thống AI Agent tổng quát: người dùng nhập ý tưởng thô, agent tự phân tích loại dự án, đề xuất chức năng, kiến trúc, lộ trình, tác vụ, prompt, cho duyệt rồi thực thi và đánh giá.",
+    "mode": "existing_project",
+    "sourcePath": "/Applications/du-an/AI-agent",
+    "projectType": "ai_tool",
+    "status": "awaiting_approval",
+    "confidence": 0.67,
+    "createdAt": "2026-05-05T04:42:21.318Z",
+    "updatedAt": "2026-05-05T04:42:22.620Z"
+  },
+  "intentAnalysis": {
+    "projectType": "ai_tool",
+    "confidence": 0.67,
+    "reasoning": "Ý tưởng có tín hiệu phù hợp với công cụ AI: prompt.",
+    "targetPlatforms": [
+      "web/browser",
+      "API"
+    ],
+    "missingQuestions": [],
+    "initialAssumptions": [
+      "MVP ưu tiên tài liệu có thể duyệt/chỉnh sửa trước khi thực thi.",
+      "Chưa thêm database nghiệp vụ nếu chưa có nhu cầu lưu state/lịch sử.",
+      "Không mặc định đây là web app; phân tích theo công cụ AI."
+    ],
+    "signals": [
+      "prompt"
+    ]
+  },
+  "requirements": {
+    "projectName": "Xây dựng hệ thống AI Agent tổng",
+    "oneLineSummary": "công cụ AI giúp biến ý tưởng \"Xây dựng hệ thống AI Agent tổng quát: người dùng nhập ý tưởng thô, agent tự phân tích loại dự án, đề xuất chức năng, kiến trúc, lộ trình, tá...\" thành kế hoạch và sản phẩm có thể thực thi.",
+    "targetUsers": [
+      "Người dùng cuối",
+      "Người quản lý sản phẩm"
+    ],
+    "problemStatement": "Người dùng cần một công cụ AI để giải quyết nhu cầu trong ý tưởng: Xây dựng hệ thống AI Agent tổng quát: người dùng nhập ý tưởng thô, agent tự phân tích loại dự án, đề xuất chức năng, kiến trúc, lộ trình, tác vụ, prompt, cho duyệt rồi thực thi và đánh giá.",
+    "primaryGoals": [
+      "Sửa/nâng cấp codebase hiện có với thay đổi tối thiểu và có thể review bằng diff.",
+      "Xác định input/output, chuỗi prompt, đánh giá và guardrail",
+      "Làm rõ phạm vi MVP",
+      "Tạo tài liệu có thể review và lập phiên bản",
+      "Giảm quyết định kỹ thuật thừa"
+    ],
+    "nonGoals": [
+      "Không mặc định cần API, database hoặc xác thực nếu loại dự án không đòi hỏi.",
+      "Không ép blueprint thành CRUD cố định.",
+      "Không thực thi code trước khi người dùng duyệt các tài liệu chính."
+    ],
+    "constraints": [
+      "Mọi đề xuất phải dựa trên ngữ cảnh ý tưởng và loại dự án đã nhận diện.",
+      "Nếu thiếu thông tin quan trọng, agent chỉ hỏi tối đa 2-3 câu ưu tiên cao.",
+      "Các tài liệu cần có phiên bản để người dùng có thể sửa và duyệt trước khi thực thi.",
+      "Codebase hiện có: /Applications/du-an/AI-agent",
+      "Giữ framework/script hiện có: Next.js, React."
+    ],
+    "successMetrics": [
+      "Output đúng schema",
+      "Đánh giá đạt trên ví dụ mẫu"
+    ]
+  },
+  "featureDiscovery": {
+    "coreFeatures": [
+      "Lập kế hoạch thay đổi theo codebase hiện có",
+      "Blueprint dự án động theo ngữ cảnh",
+      "Cổng duyệt trước các bước có tác động lớn",
+      "Nhật ký agent theo thời gian",
+      "Schema input/output",
+      "Chuỗi prompt",
+      "Adapter model provider",
+      "Checklist đánh giá"
+    ],
+    "optionalFeatures": [
+      "Knowledge base RAG",
+      "Streaming output",
+      "Vòng phản hồi của người dùng"
+    ],
+    "typeSpecific": {
+      "aiFlow": [
+        "thu input",
+        "chuẩn bị ngữ cảnh",
+        "gọi model",
+        "kiểm tra output",
+        "trình bày kết quả"
+      ],
+      "guardrails": [
+        "kiểm tra schema",
+        "xử lý dữ liệu nhạy cảm",
+        "phản hồi dự phòng"
+      ],
+      "evals": [
+        "ví dụ chuẩn",
+        "rubric review",
+        "prompt hồi quy"
+      ],
+      "existingCodebase": {
+        "sourcePath": "/Applications/du-an/AI-agent",
+        "keyFiles": [
+          "README.md",
+          "app/api/codex/status/route.ts",
+          "app/api/projects/[projectId]/analyze/route.ts",
+          "app/api/projects/[projectId]/artifacts/[artifactId]/approve/route.ts",
+          "app/api/projects/[projectId]/artifacts/[artifactId]/route.ts",
+          "app/api/projects/[projectId]/artifacts/route.ts",
+          "app/api/projects/[projectId]/blueprint/route.ts",
+          "app/api/projects/[projectId]/codebase/route.ts",
+          "app/api/projects/[projectId]/execute/route.ts",
+          "app/api/projects/[projectId]/logs/route.ts",
+          "app/api/projects/[projectId]/review/route.ts",
+          "app/api/projects/[projectId]/route.ts",
+          "app/api/projects/route.ts",
+          "app/globals.css",
+          "app/layout.tsx",
+          "app/page.tsx",
+          "next.config.ts",
+          "package.json",
+          "tsconfig.json",
+          "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/README.md",
+          "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/README.md"
+        ],
+        "detectedCommands": {
+          "install": "npm install",
+          "typecheck": "npm run typecheck",
+          "build": "npm run build",
+          "dev": "npm run dev"
+        }
+      }
+    },
+    "excludedByDesign": [
+      "Không thêm database ứng dụng nếu chưa có nhu cầu lưu trạng thái.",
+      "Không thêm xác thực nếu MVP một người dùng đã đủ."
+    ]
+  },
+  "architecturePlan": {
+    "overview": "Kiến trúc công cụ AI tập trung vào hợp đồng input/output, chuỗi prompt, model provider, đánh giá và guardrail. Chế độ sửa repo sẽ ưu tiên stack đang có: Next.js, React.",
+    "frontend": {
+      "recommended": false,
+      "rationale": "Có thể bắt đầu bằng CLI nếu là workflow nội bộ.",
+      "stack": [
+        "Next.js",
+        "React",
+        "Streaming UI nếu cần"
+      ]
+    },
+    "backend": {
+      "recommended": true,
+      "rationale": "Nên có backend để giữ API key, prompt template, logging và guardrail.",
+      "stack": [
+        "Node.js route handlers",
+        "LLM provider adapter",
+        "Eval runner"
+      ]
+    },
+    "api": {
+      "recommended": true,
+      "rationale": "Cần endpoint trung gian giữa UI/CLI và model provider.",
+      "style": "REST/streaming"
+    },
+    "database": {
+      "recommended": false,
+      "rationale": "MVP có thể không lưu lịch sử.",
+      "options": []
+    },
+    "runtime": [
+      "Chuỗi prompt",
+      "Adapter provider",
+      "Checklist đánh giá",
+      "Bộ lọc an toàn",
+      "npm install",
+      "npm run typecheck",
+      "npm run build",
+      "npm run dev"
+    ],
+    "integrations": [],
+    "risks": [
+      "Prompt lệch ngữ cảnh",
+      "Chi phí model",
+      "Output không ổn định",
+      "Không có test script trong package.json."
+    ]
+  },
+  "codebaseContext": {
+    "sourcePath": "/Applications/du-an/AI-agent",
+    "rootName": "AI-agent",
+    "packageManager": "npm",
+    "frameworkSignals": [
+      "Next.js",
+      "React"
+    ],
+    "languages": [
+      "TypeScript",
+      "TypeScript React"
+    ],
+    "scripts": {
+      "dev": "next dev",
+      "dev:clean": "node scripts/clean-next.mjs && next dev",
+      "clean": "node scripts/clean-next.mjs",
+      "build": "next build",
+      "build:clean": "node scripts/clean-next.mjs && next build",
+      "typecheck": "tsc --noEmit",
+      "test:integration": "node --test tests/integration.agent-flow.test.mjs"
+    },
+    "dependencies": [
+      "lucide-react",
+      "next",
+      "react",
+      "react-dom",
+      "zod"
+    ],
+    "devDependencies": [
+      "@types/node",
+      "@types/react",
+      "@types/react-dom",
+      "typescript"
+    ],
+    "keyFiles": [
+      "README.md",
+      "app/api/codex/status/route.ts",
+      "app/api/projects/[projectId]/analyze/route.ts",
+      "app/api/projects/[projectId]/artifacts/[artifactId]/approve/route.ts",
+      "app/api/projects/[projectId]/artifacts/[artifactId]/route.ts",
+      "app/api/projects/[projectId]/artifacts/route.ts",
+      "app/api/projects/[projectId]/blueprint/route.ts",
+      "app/api/projects/[projectId]/codebase/route.ts",
+      "app/api/projects/[projectId]/execute/route.ts",
+      "app/api/projects/[projectId]/logs/route.ts",
+      "app/api/projects/[projectId]/review/route.ts",
+      "app/api/projects/[projectId]/route.ts",
+      "app/api/projects/route.ts",
+      "app/globals.css",
+      "app/layout.tsx",
+      "app/page.tsx",
+      "next.config.ts",
+      "package.json",
+      "tsconfig.json",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/README.md",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/README.md"
+    ],
+    "fileSamples": [
+      ".gitignore",
+      "README.md",
+      "app/api/codex/status/route.ts",
+      "app/api/projects/[projectId]/analyze/route.ts",
+      "app/api/projects/[projectId]/artifacts/[artifactId]/approve/route.ts",
+      "app/api/projects/[projectId]/artifacts/[artifactId]/route.ts",
+      "app/api/projects/[projectId]/artifacts/route.ts",
+      "app/api/projects/[projectId]/blueprint/route.ts",
+      "app/api/projects/[projectId]/codebase/route.ts",
+      "app/api/projects/[projectId]/execute/route.ts",
+      "app/api/projects/[projectId]/logs/route.ts",
+      "app/api/projects/[projectId]/review/route.ts",
+      "app/api/projects/[projectId]/route.ts",
+      "app/api/projects/route.ts",
+      "app/globals.css",
+      "app/layout.tsx",
+      "app/page.tsx",
+      "components/TerminalWindow.tsx",
+      "data/.gitkeep",
+      "data/db.json",
+      "docs/architecture.md",
+      "lib/api.ts",
+      "lib/store.ts",
+      "next-env.d.ts",
+      "next.config.ts",
+      "package-lock.json",
+      "package.json",
+      "packages/agents/codebase-analyzer.ts",
+      "packages/agents/heuristic-agents.ts",
+      "packages/db/migrations/001_initial.sql",
+      "packages/orchestrator/code-edit-executor.ts",
+      "packages/orchestrator/codex-cli-executor.ts",
+      "packages/orchestrator/llm-provider.ts",
+      "packages/orchestrator/sandbox-runner.ts",
+      "packages/orchestrator/workflow-engine.ts",
+      "packages/prompts/agents/architecture-planner.md",
+      "packages/prompts/agents/intent-analyzer.md",
+      "packages/schemas/project-blueprint.schema.ts",
+      "scripts/clean-next.mjs",
+      "tests/integration.agent-flow.test.mjs",
+      "tsconfig.json",
+      "tsconfig.tsbuildinfo",
+      "workspaces/projects/.gitkeep",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/BLUEPRINT.json",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/PROMPTS.md",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/README.md",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/TASKS.md",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/BLUEPRINT.json",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/PROMPTS.md",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/README.md",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/TASKS.md"
+    ],
+    "ignoredDirectories": [
+      ".git",
+      ".next",
+      "node_modules",
+      "dist",
+      "build",
+      "coverage",
+      ".turbo",
+      ".cache",
+      "out"
+    ],
+    "stats": {
+      "fileCount": 51,
+      "directoryCount": 34,
+      "scannedAt": "2026-05-05T04:42:22.276Z"
+    },
+    "detectedCommands": {
+      "install": "npm install",
+      "typecheck": "npm run typecheck",
+      "build": "npm run build",
+      "dev": "npm run dev"
+    },
+    "risks": [
+      "Không có test script trong package.json."
+    ]
+  },
+  "roadmap": [
+    {
+      "id": "78101ab6-7d56-4d2c-82d7-35d23baae104",
+      "title": "Nền tảng blueprint",
+      "objective": "Chuẩn hóa ý tưởng thành blueprint cho công cụ AI.",
+      "deliverables": [
+        "Phân tích ý định",
+        "Yêu cầu",
+        "Đề xuất chức năng"
+      ],
+      "exitCriteria": [
+        "Có loại dự án và giả định rõ",
+        "Chức năng không bị hard-code theo CRUD/web"
+      ]
+    },
+    {
+      "id": "7588f7dd-c26b-4f78-8502-b3e6bd4b71d2",
+      "title": "Kiến trúc và workflow",
+      "objective": "Xác định stack, runtime và luồng thực thi phù hợp với ngữ cảnh.",
+      "deliverables": [
+        "Kế hoạch kiến trúc",
+        "Danh sách rủi ro",
+        "Cổng duyệt"
+      ],
+      "exitCriteria": [
+        "Chỉ đề xuất frontend/backend/API/database khi có lý do",
+        "Có luồng người dùng review trước khi thực thi"
+      ]
+    },
+    {
+      "id": "6179ae9d-82a0-426e-bbb7-f883fd543ec1",
+      "title": "Prompt triển khai",
+      "objective": "Chia công việc thành tác vụ và prompt mà agent lập trình có thể thực thi.",
+      "deliverables": [
+        "Kế hoạch tác vụ",
+        "Prompt thực thi",
+        "Checklist đánh giá"
+      ],
+      "exitCriteria": [
+        "Tác vụ có tiêu chí nghiệm thu",
+        "Prompt đủ ngữ cảnh và không mở rộng phạm vi"
+      ]
+    },
+    {
+      "id": "7ce5a5cc-852f-45bf-8300-206c9815de49",
+      "title": "Vòng thực thi và đánh giá",
+      "objective": "Thực thi từng tác vụ, đánh giá kết quả và tạo prompt sửa lỗi khi chưa đạt.",
+      "deliverables": [
+        "Kết quả thư mục làm việc",
+        "Báo cáo đánh giá",
+        "Prompt sửa lỗi nếu cần"
+      ],
+      "exitCriteria": [
+        "Có tài liệu đầu ra",
+        "Đánh giá đạt hoặc có prompt sửa tiếp"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "d6c7f866-c7ef-4dd6-b666-efcf4355a537",
+      "title": "Rà soát tác động lên codebase hiện có",
+      "objective": "Xác định file/module cần sửa trong repo hiện có trước khi thay đổi code.",
+      "taskType": "codebase_impact_analysis",
+      "targetArea": "existing_codebase",
+      "acceptanceCriteria": [
+        "Chỉ ra file/module liên quan dựa trên ngữ cảnh codebase.",
+        "Giữ trình quản lý gói, framework và script hiện có.",
+        "Nếu cần thêm dependency, phải nêu lý do và rủi ro."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "priority": 0,
+      "projectId": "f60d8d95-6776-4fd0-bc52-caf363ae9210",
+      "createdAt": "2026-05-05T04:42:22.559Z",
+      "updatedAt": "2026-05-05T04:42:22.559Z"
+    },
+    {
+      "id": "ad219852-8b9e-4ec1-a190-08adf5013b5b",
+      "title": "Hoàn thiện blueprint dự án",
+      "objective": "Tổng hợp ý định, yêu cầu và chức năng thành blueprint cho công cụ AI.",
+      "taskType": "blueprint_design",
+      "targetArea": "planning",
+      "parentTaskId": "78101ab6-7d56-4d2c-82d7-35d23baae104",
+      "acceptanceCriteria": [
+        "Blueprint có project_type, target_users, problem, goals, constraints.",
+        "Chức năng đề xuất phù hợp với loại dự án.",
+        "Nếu thiếu thông tin, missing questions không quá 3 câu."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "priority": 1,
+      "projectId": "f60d8d95-6776-4fd0-bc52-caf363ae9210",
+      "createdAt": "2026-05-05T04:42:22.559Z",
+      "updatedAt": "2026-05-05T04:42:22.559Z"
+    },
+    {
+      "id": "7bbb6094-aa07-4393-81d8-a75beb7943fc",
+      "title": "Chuẩn bị hợp đồng thực thi",
+      "objective": "Định nghĩa format prompt, output và checklist đánh giá cho agent lập trình.",
+      "taskType": "prompt_contract",
+      "targetArea": "agent_orchestration",
+      "parentTaskId": "6179ae9d-82a0-426e-bbb7-f883fd543ec1",
+      "acceptanceCriteria": [
+        "Mỗi tác vụ có mục tiêu, ràng buộc và tiêu chí nghiệm thu.",
+        "Prompt không yêu cầu API/database nếu kiến trúc không khuyến nghị.",
+        "Checklist đánh giá gắn với loại tác vụ."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "priority": 2,
+      "projectId": "f60d8d95-6776-4fd0-bc52-caf363ae9210",
+      "createdAt": "2026-05-05T04:42:22.559Z",
+      "updatedAt": "2026-05-05T04:42:22.559Z"
+    },
+    {
+      "id": "adb74c5f-b5c3-43cc-a158-fda91d1653e7",
+      "title": "Thiết kế luồng input-output và đánh giá AI",
+      "objective": "Định nghĩa schema input/output, chuỗi prompt và checklist đánh giá.",
+      "taskType": "write_prompt_chain",
+      "targetArea": "ai_runtime",
+      "parentTaskId": "7588f7dd-c26b-4f78-8502-b3e6bd4b71d2",
+      "acceptanceCriteria": [
+        "Kết quả phải phục vụ: công cụ AI giúp biến ý tưởng \"Xây dựng hệ thống AI Agent tổng quát: người dùng nhập ý tưởng thô, agent tự phân tích loại dự án, đề xuất chức năng, kiến trúc, lộ trình, tá...\" thành kế hoạch và sản phẩm có thể thực thi.",
+        "Giữ phạm vi theo blueprint và tài liệu đã duyệt.",
+        "Có chuỗi prompt, kiểm tra schema và rubric đánh giá."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "priority": 3,
+      "projectId": "f60d8d95-6776-4fd0-bc52-caf363ae9210",
+      "createdAt": "2026-05-05T04:42:22.559Z",
+      "updatedAt": "2026-05-05T04:42:22.559Z"
+    }
+  ],
+  "approvedArtifactSnapshot": [
+    {
+      "artifactType": "codebase_context",
+      "artifactId": "5962db8c-cb71-4bcb-a78c-417b1479459c",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:42:23.011Z"
+    },
+    {
+      "artifactType": "requirements",
+      "artifactId": "d094bbb5-0e8e-48cd-8fdd-bb8581cb58d4",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:42:22.991Z"
+    },
+    {
+      "artifactType": "feature_discovery",
+      "artifactId": "106c0c05-7c2c-4f0a-bdeb-13cd5e4891d0",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:42:22.956Z"
+    },
+    {
+      "artifactType": "architecture_plan",
+      "artifactId": "e0a22bea-26a5-480b-840c-c7cc8c73858c",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:42:22.931Z"
+    },
+    {
+      "artifactType": "task_plan",
+      "artifactId": "29fdcc55-1235-4d8c-99a3-1a15acd771a3",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:42:22.871Z"
+    },
+    {
+      "artifactType": "execution_prompt",
+      "artifactId": "3c75e849-22ef-4183-905f-7ecc66f8bd4a",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:42:22.797Z"
+    }
+  ]
+}

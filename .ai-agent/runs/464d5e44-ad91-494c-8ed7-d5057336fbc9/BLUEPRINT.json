@@ -1,0 +1,493 @@
+{
+  "project": {
+    "id": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
+    "name": "Rà soát lại dự án xem cần",
+    "rawIdea": "rà soát lại dự án xem cần cải thiện ở đâu ",
+    "mode": "existing_project",
+    "sourcePath": "/Applications/du-an/AI-agent",
+    "projectType": "unknown",
+    "status": "executing",
+    "confidence": 0.42,
+    "createdAt": "2026-05-05T04:56:49.656Z",
+    "updatedAt": "2026-05-05T05:09:43.456Z"
+  },
+  "intentAnalysis": {
+    "projectType": "unknown",
+    "confidence": 0.42,
+    "reasoning": "Ý tưởng hiện chưa có đủ tín hiệu để phân loại chắc chắn, nên hệ thống cần giữ blueprint mở và hỏi thêm thông tin tối thiểu.",
+    "targetPlatforms": [],
+    "missingQuestions": [
+      "Đầu ra mong muốn là ứng dụng, bot, game, automation hay tài liệu/prototype?",
+      "Nhóm người dùng mục tiêu chính là ai?"
+    ],
+    "initialAssumptions": [
+      "MVP ưu tiên tài liệu có thể duyệt/chỉnh sửa trước khi thực thi.",
+      "Chưa thêm database nghiệp vụ nếu chưa có nhu cầu lưu state/lịch sử.",
+      "Không mặc định đây là web app; phân tích theo dự án chưa rõ loại."
+    ],
+    "signals": []
+  },
+  "requirements": {
+    "projectName": "Rà soát lại dự án xem cần",
+    "oneLineSummary": "dự án chưa rõ loại giúp biến ý tưởng \"rà soát lại dự án xem cần cải thiện ở đâu\" thành kế hoạch và sản phẩm có thể thực thi.",
+    "targetUsers": [
+      "Người dùng cuối",
+      "Người quản lý sản phẩm"
+    ],
+    "problemStatement": "Người dùng cần một dự án chưa rõ loại để giải quyết nhu cầu trong ý tưởng: rà soát lại dự án xem cần cải thiện ở đâu",
+    "primaryGoals": [
+      "Sửa/nâng cấp codebase hiện có với thay đổi tối thiểu và có thể review bằng diff.",
+      "Hỏi thêm ít thông tin nhất để chọn hướng đúng",
+      "Làm rõ phạm vi MVP",
+      "Tạo tài liệu có thể review và lập phiên bản",
+      "Giảm quyết định kỹ thuật thừa"
+    ],
+    "nonGoals": [
+      "Không mặc định cần API, database hoặc xác thực nếu loại dự án không đòi hỏi.",
+      "Không ép blueprint thành CRUD cố định.",
+      "Không thực thi code trước khi người dùng duyệt các tài liệu chính."
+    ],
+    "constraints": [
+      "Mọi đề xuất phải dựa trên ngữ cảnh ý tưởng và loại dự án đã nhận diện.",
+      "Nếu thiếu thông tin quan trọng, agent chỉ hỏi tối đa 2-3 câu ưu tiên cao.",
+      "Các tài liệu cần có phiên bản để người dùng có thể sửa và duyệt trước khi thực thi.",
+      "Codebase hiện có: /Applications/du-an/AI-agent",
+      "Giữ framework/script hiện có: Next.js, React."
+    ],
+    "successMetrics": [
+      "Loại dự án được xác nhận",
+      "Giả định được ghi lại"
+    ]
+  },
+  "featureDiscovery": {
+    "coreFeatures": [
+      "Lập kế hoạch thay đổi theo codebase hiện có",
+      "Blueprint dự án động theo ngữ cảnh",
+      "Cổng duyệt trước các bước có tác động lớn",
+      "Nhật ký agent theo thời gian",
+      "Nhập ý tưởng",
+      "Phân tích theo ngữ cảnh",
+      "Đề xuất chức năng động",
+      "Phân rã lộ trình/tác vụ",
+      "Vòng đánh giá"
+    ],
+    "optionalFeatures": [
+      "Chế độ local một người dùng",
+      "Lịch sử chỉ để xuất file",
+      "Theo dõi tiến độ realtime"
+    ],
+    "typeSpecific": {
+      "flows": [
+        "gửi ý tưởng",
+        "xem phân tích",
+        "duyệt kế hoạch",
+        "thực thi",
+        "đánh giá/sửa"
+      ],
+      "state": [
+        "bộ nhớ tạm/session"
+      ],
+      "approvalGates": [
+        "phân tích",
+        "chức năng",
+        "kiến trúc",
+        "thực thi"
+      ],
+      "existingCodebase": {
+        "sourcePath": "/Applications/du-an/AI-agent",
+        "keyFiles": [
+          ".ai-agent/runs/f60d8d95-6776-4fd0-bc52-caf363ae9210/README.md",
+          "README.md",
+          "app/api/codex/status/route.ts",
+          "app/api/projects/[projectId]/analyze/route.ts",
+          "app/api/projects/[projectId]/artifacts/[artifactId]/approve/route.ts",
+          "app/api/projects/[projectId]/artifacts/[artifactId]/route.ts",
+          "app/api/projects/[projectId]/artifacts/route.ts",
+          "app/api/projects/[projectId]/blueprint/route.ts",
+          "app/api/projects/[projectId]/codebase/route.ts",
+          "app/api/projects/[projectId]/execute/route.ts",
+          "app/api/projects/[projectId]/logs/route.ts",
+          "app/api/projects/[projectId]/review/route.ts",
+          "app/api/projects/[projectId]/route.ts",
+          "app/api/projects/route.ts",
+          "app/globals.css",
+          "app/layout.tsx",
+          "app/page.tsx",
+          "next.config.ts",
+          "package.json",
+          "tsconfig.json",
+          "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/README.md",
+          "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/README.md"
+        ],
+        "detectedCommands": {
+          "install": "npm install",
+          "typecheck": "npm run typecheck",
+          "build": "npm run build",
+          "dev": "npm run dev"
+        }
+      }
+    },
+    "excludedByDesign": [
+      "Không thêm database ứng dụng nếu chưa có nhu cầu lưu trạng thái.",
+      "Không thêm xác thực nếu MVP một người dùng đã đủ."
+    ]
+  },
+  "architecturePlan": {
+    "overview": "Kiến trúc giữ mở: bắt đầu bằng blueprint và prototype tối thiểu, chỉ thêm web/backend/database khi đã có nhu cầu rõ. Chế độ sửa repo sẽ ưu tiên stack đang có: Next.js, React.",
+    "frontend": {
+      "recommended": false,
+      "rationale": "Chưa chắc cần UI cho tới khi làm rõ xong.",
+      "stack": []
+    },
+    "backend": {
+      "recommended": false,
+      "rationale": "Web app tĩnh/one-off có thể không cần backend lúc đầu.",
+      "stack": [
+        "Next.js route handlers",
+        "Node.js services"
+      ]
+    },
+    "api": {
+      "recommended": false,
+      "rationale": "API cần khi frontend phải đọc/ghi state hoặc nối với dịch vụ ngoài.",
+      "style": "REST hoặc server actions"
+    },
+    "database": {
+      "recommended": false,
+      "rationale": "Không cần DB cho static/prototype không có state.",
+      "options": []
+    },
+    "runtime": [
+      "Runtime ứng dụng",
+      "Điều phối agent",
+      "Log có cấu trúc",
+      "npm install",
+      "npm run typecheck",
+      "npm run build",
+      "npm run dev"
+    ],
+    "integrations": [],
+    "risks": [
+      "Phạm vi phình to",
+      "Schema tài liệu quá cứng",
+      "Thiếu cổng duyệt trước khi thực thi",
+      "Không có test script trong package.json."
+    ]
+  },
+  "codebaseContext": {
+    "sourcePath": "/Applications/du-an/AI-agent",
+    "rootName": "AI-agent",
+    "packageManager": "npm",
+    "frameworkSignals": [
+      "Next.js",
+      "React"
+    ],
+    "languages": [
+      "TypeScript",
+      "TypeScript React"
+    ],
+    "scripts": {
+      "dev": "next dev",
+      "dev:clean": "node scripts/clean-next.mjs && next dev",
+      "clean": "node scripts/clean-next.mjs",
+      "build": "next build",
+      "build:clean": "node scripts/clean-next.mjs && next build",
+      "typecheck": "tsc --noEmit",
+      "test:integration": "node --test tests/integration.agent-flow.test.mjs"
+    },
+    "dependencies": [
+      "lucide-react",
+      "next",
+      "react",
+      "react-dom",
+      "zod"
+    ],
+    "devDependencies": [
+      "@types/node",
+      "@types/react",
+      "@types/react-dom",
+      "typescript"
+    ],
+    "keyFiles": [
+      ".ai-agent/runs/f60d8d95-6776-4fd0-bc52-caf363ae9210/README.md",
+      "README.md",
+      "app/api/codex/status/route.ts",
+      "app/api/projects/[projectId]/analyze/route.ts",
+      "app/api/projects/[projectId]/artifacts/[artifactId]/approve/route.ts",
+      "app/api/projects/[projectId]/artifacts/[artifactId]/route.ts",
+      "app/api/projects/[projectId]/artifacts/route.ts",
+      "app/api/projects/[projectId]/blueprint/route.ts",
+      "app/api/projects/[projectId]/codebase/route.ts",
+      "app/api/projects/[projectId]/execute/route.ts",
+      "app/api/projects/[projectId]/logs/route.ts",
+      "app/api/projects/[projectId]/review/route.ts",
+      "app/api/projects/[projectId]/route.ts",
+      "app/api/projects/route.ts",
+      "app/globals.css",
+      "app/layout.tsx",
+      "app/page.tsx",
+      "next.config.ts",
+      "package.json",
+      "tsconfig.json",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/README.md",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/README.md"
+    ],
+    "fileSamples": [
+      ".ai-agent/runs/f60d8d95-6776-4fd0-bc52-caf363ae9210/BLUEPRINT.json",
+      ".ai-agent/runs/f60d8d95-6776-4fd0-bc52-caf363ae9210/PROMPTS.md",
+      ".ai-agent/runs/f60d8d95-6776-4fd0-bc52-caf363ae9210/PROVIDER_OUTPUT.md",
+      ".ai-agent/runs/f60d8d95-6776-4fd0-bc52-caf363ae9210/README.md",
+      ".ai-agent/runs/f60d8d95-6776-4fd0-bc52-caf363ae9210/TASKS.md",
+      ".env.local",
+      ".gitignore",
+      "README.md",
+      "app/api/codex/status/route.ts",
+      "app/api/projects/[projectId]/analyze/route.ts",
+      "app/api/projects/[projectId]/artifacts/[artifactId]/approve/route.ts",
+      "app/api/projects/[projectId]/artifacts/[artifactId]/route.ts",
+      "app/api/projects/[projectId]/artifacts/route.ts",
+      "app/api/projects/[projectId]/blueprint/route.ts",
+      "app/api/projects/[projectId]/codebase/route.ts",
+      "app/api/projects/[projectId]/execute/route.ts",
+      "app/api/projects/[projectId]/logs/route.ts",
+      "app/api/projects/[projectId]/review/route.ts",
+      "app/api/projects/[projectId]/route.ts",
+      "app/api/projects/route.ts",
+      "app/globals.css",
+      "app/layout.tsx",
+      "app/page.tsx",
+      "components/TerminalWindow.tsx",
+      "data/.gitkeep",
+      "data/db.json",
+      "docs/architecture.md",
+      "lib/api.ts",
+      "lib/store.ts",
+      "next-env.d.ts",
+      "next.config.ts",
+      "package-lock.json",
+      "package.json",
+      "packages/agents/codebase-analyzer.ts",
+      "packages/agents/heuristic-agents.ts",
+      "packages/db/migrations/001_initial.sql",
+      "packages/orchestrator/code-edit-executor.ts",
+      "packages/orchestrator/codex-cli-executor.ts",
+      "packages/orchestrator/llm-provider.ts",
+      "packages/orchestrator/sandbox-runner.ts",
+      "packages/orchestrator/workflow-engine.ts",
+      "packages/prompts/agents/architecture-planner.md",
+      "packages/prompts/agents/intent-analyzer.md",
+      "packages/schemas/project-blueprint.schema.ts",
+      "scripts/clean-next.mjs",
+      "tests/integration.agent-flow.test.mjs",
+      "tsconfig.json",
+      "tsconfig.tsbuildinfo",
+      "workspaces/projects/.gitkeep",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/BLUEPRINT.json",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/PROMPTS.md",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/README.md",
+      "workspaces/projects/1b31fa96-9167-43d2-87e7-a16f2a76b177/TASKS.md",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/BLUEPRINT.json",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/PROMPTS.md",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/README.md",
+      "workspaces/projects/d6bebdbb-ceb0-430a-8b14-7bb682720c22/TASKS.md"
+    ],
+    "ignoredDirectories": [
+      ".git",
+      ".next",
+      "node_modules",
+      "dist",
+      "build",
+      "coverage",
+      ".turbo",
+      ".cache",
+      "out"
+    ],
+    "stats": {
+      "fileCount": 57,
+      "directoryCount": 39,
+      "scannedAt": "2026-05-05T04:56:49.781Z"
+    },
+    "detectedCommands": {
+      "install": "npm install",
+      "typecheck": "npm run typecheck",
+      "build": "npm run build",
+      "dev": "npm run dev"
+    },
+    "risks": [
+      "Không có test script trong package.json."
+    ]
+  },
+  "roadmap": [
+    {
+      "id": "c100ba51-2858-44cd-a131-6ee0a8ebab36",
+      "title": "Nền tảng blueprint",
+      "objective": "Chuẩn hóa ý tưởng thành blueprint cho dự án chưa rõ loại.",
+      "deliverables": [
+        "Phân tích ý định",
+        "Yêu cầu",
+        "Đề xuất chức năng"
+      ],
+      "exitCriteria": [
+        "Có loại dự án và giả định rõ",
+        "Chức năng không bị hard-code theo CRUD/web"
+      ]
+    },
+    {
+      "id": "8476bc18-f956-4f61-b5a0-9a26f69a1c9c",
+      "title": "Kiến trúc và workflow",
+      "objective": "Xác định stack, runtime và luồng thực thi phù hợp với ngữ cảnh.",
+      "deliverables": [
+        "Kế hoạch kiến trúc",
+        "Danh sách rủi ro",
+        "Cổng duyệt"
+      ],
+      "exitCriteria": [
+        "Chỉ đề xuất frontend/backend/API/database khi có lý do",
+        "Có luồng người dùng review trước khi thực thi"
+      ]
+    },
+    {
+      "id": "d55a5e0c-95fa-4103-9306-19458969ac50",
+      "title": "Prompt triển khai",
+      "objective": "Chia công việc thành tác vụ và prompt mà agent lập trình có thể thực thi.",
+      "deliverables": [
+        "Kế hoạch tác vụ",
+        "Prompt thực thi",
+        "Checklist đánh giá"
+      ],
+      "exitCriteria": [
+        "Tác vụ có tiêu chí nghiệm thu",
+        "Prompt đủ ngữ cảnh và không mở rộng phạm vi"
+      ]
+    },
+    {
+      "id": "7c337740-9d24-4ad1-b39f-fc0b99ea9b87",
+      "title": "Vòng thực thi và đánh giá",
+      "objective": "Thực thi từng tác vụ, đánh giá kết quả và tạo prompt sửa lỗi khi chưa đạt.",
+      "deliverables": [
+        "Kết quả thư mục làm việc",
+        "Báo cáo đánh giá",
+        "Prompt sửa lỗi nếu cần"
+      ],
+      "exitCriteria": [
+        "Có tài liệu đầu ra",
+        "Đánh giá đạt hoặc có prompt sửa tiếp"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "60b4f90c-81cd-40c3-85f4-415fe9fe71b2",
+      "title": "Rà soát tác động lên codebase hiện có",
+      "objective": "Xác định file/module cần sửa trong repo hiện có trước khi thay đổi code.",
+      "taskType": "codebase_impact_analysis",
+      "targetArea": "existing_codebase",
+      "acceptanceCriteria": [
+        "Chỉ ra file/module liên quan dựa trên ngữ cảnh codebase.",
+        "Giữ trình quản lý gói, framework và script hiện có.",
+        "Nếu cần thêm dependency, phải nêu lý do và rủi ro."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "priority": 0,
+      "projectId": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
+      "createdAt": "2026-05-05T04:56:50.151Z",
+      "updatedAt": "2026-05-05T04:56:50.151Z"
+    },
+    {
+      "id": "45c82137-a646-4fac-a4c7-93cda7d67b1c",
+      "title": "Hoàn thiện blueprint dự án",
+      "objective": "Tổng hợp ý định, yêu cầu và chức năng thành blueprint cho dự án chưa rõ loại.",
+      "taskType": "blueprint_design",
+      "targetArea": "planning",
+      "parentTaskId": "c100ba51-2858-44cd-a131-6ee0a8ebab36",
+      "acceptanceCriteria": [
+        "Blueprint có project_type, target_users, problem, goals, constraints.",
+        "Chức năng đề xuất phù hợp với loại dự án.",
+        "Nếu thiếu thông tin, missing questions không quá 3 câu."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "priority": 1,
+      "projectId": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
+      "createdAt": "2026-05-05T04:56:50.151Z",
+      "updatedAt": "2026-05-05T04:56:50.151Z"
+    },
+    {
+      "id": "ad4cf874-7e2c-4420-9026-98d90c550e22",
+      "title": "Chuẩn bị hợp đồng thực thi",
+      "objective": "Định nghĩa format prompt, output và checklist đánh giá cho agent lập trình.",
+      "taskType": "prompt_contract",
+      "targetArea": "agent_orchestration",
+      "parentTaskId": "d55a5e0c-95fa-4103-9306-19458969ac50",
+      "acceptanceCriteria": [
+        "Mỗi tác vụ có mục tiêu, ràng buộc và tiêu chí nghiệm thu.",
+        "Prompt không yêu cầu API/database nếu kiến trúc không khuyến nghị.",
+        "Checklist đánh giá gắn với loại tác vụ."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "priority": 2,
+      "projectId": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
+      "createdAt": "2026-05-05T04:56:50.151Z",
+      "updatedAt": "2026-05-05T04:56:50.151Z"
+    },
+    {
+      "id": "ed28f6eb-0db7-4da7-a37f-db170d59e43c",
+      "title": "Xây dựng luồng runtime theo ngữ cảnh",
+      "objective": "Tạo luồng runtime tối thiểu phù hợp với dự án không cần UI.",
+      "taskType": "runtime_flow",
+      "targetArea": "runtime",
+      "parentTaskId": "8476bc18-f956-4f61-b5a0-9a26f69a1c9c",
+      "acceptanceCriteria": [
+        "Kết quả phải phục vụ: dự án chưa rõ loại giúp biến ý tưởng \"rà soát lại dự án xem cần cải thiện ở đâu\" thành kế hoạch và sản phẩm có thể thực thi.",
+        "Giữ phạm vi theo blueprint và tài liệu đã duyệt.",
+        "Có luồng CLI/service và log output rõ ràng."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "priority": 3,
+      "projectId": "464d5e44-ad91-494c-8ed7-d5057336fbc9",
+      "createdAt": "2026-05-05T04:56:50.151Z",
+      "updatedAt": "2026-05-05T04:56:50.151Z"
+    }
+  ],
+  "approvedArtifactSnapshot": [
+    {
+      "artifactType": "codebase_context",
+      "artifactId": "fd45cac0-d031-4ded-a4c1-fd17b1bee135",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:56:50.435Z"
+    },
+    {
+      "artifactType": "requirements",
+      "artifactId": "f99b9436-8cd7-44f6-96c0-96b9758fc831",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:56:50.418Z"
+    },
+    {
+      "artifactType": "feature_discovery",
+      "artifactId": "1262febe-0273-49d7-9a59-4a01b0e3040d",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:56:50.401Z"
+    },
+    {
+      "artifactType": "architecture_plan",
+      "artifactId": "b1bcad4e-ff14-4ae9-b7c7-e6e6f7523880",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:56:50.384Z"
+    },
+    {
+      "artifactType": "task_plan",
+      "artifactId": "ad8a8c1a-61b1-4dba-8a40-e009579332ba",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:56:50.359Z"
+    },
+    {
+      "artifactType": "execution_prompt",
+      "artifactId": "79a77fd0-8b14-4dce-82f0-363b1f1feccd",
+      "version": 1,
+      "approvedAt": "2026-05-05T04:56:50.334Z"
+    }
+  ]
+}
