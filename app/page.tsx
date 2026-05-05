@@ -17,6 +17,7 @@ import {
   Save,
   Send,
   Sparkles,
+  Square,
   TerminalSquare,
   Wand2
 } from "lucide-react";
@@ -472,8 +473,8 @@ export default function HomePage() {
         <div className="brand">
           <Bot size={24} />
           <div>
-            <strong>Hệ thống AI Agent</strong>
-            <span>Bảng điều khiển MVP</span>
+            <strong>AI Agent Studio</strong>
+            <span>Lập kế hoạch · Thực thi · Đánh giá</span>
           </div>
         </div>
 
@@ -528,7 +529,7 @@ export default function HomePage() {
             <input type="checkbox" checked={autoAssume} onChange={(event) => setAutoAssume(event.target.checked)} />
             <span>Tự giả định khi thiếu thông tin nhỏ</span>
           </label>
-          <label className="checkLine" style={{ marginTop: '8px' }}>
+          <label className="checkLine">
             <input type="checkbox" checked={autoPilot} onChange={(event) => setAutoPilot(event.target.checked)} />
             <span>Chế độ Auto-Pilot (Bỏ qua duyệt, xem Terminal)</span>
           </label>
@@ -630,13 +631,12 @@ export default function HomePage() {
               Đánh giá
             </button>
             <button
-              className="secondary"
+              className="secondary dangerButton"
               onClick={cancelExecution}
               disabled={!canCancelExecution}
               title="Dừng tiến trình hoặc dọn agent run bị treo của dự án đang chọn"
-              style={{ color: "#ff5f56", borderColor: "#ff5f56" }}
             >
-              <div style={{ width: "12px", height: "12px", backgroundColor: "#ff5f56", borderRadius: "2px" }} />
+              <Square size={13} fill="currentColor" />
               Dừng chạy
             </button>
           </div>
@@ -988,7 +988,7 @@ function TabContent({
 
   return (
     <div className="stack">
-      <PanelTitle title="Nhật ký chạy ngầm" subtitle="Mô phỏng Terminal trực tiếp" />
+      <PanelTitle title="Nhật ký chạy ngầm" subtitle="Terminal hội thoại trực tiếp" />
       <TerminalWindow logs={blueprint.logs} runs={blueprint.agentRuns} isRunning={isExecuting} />
       
       <PanelTitle title="Lịch sử lượt chạy" subtitle="Các tác vụ đã kích hoạt" />

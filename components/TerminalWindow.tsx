@@ -61,7 +61,7 @@ export function TerminalWindow({
         </div>
         <div style={styles.headerTitle}>
           <TerminalSquare size={14} />
-          <span>AI Agent Chat Terminal</span>
+          <span>Terminal hội thoại AI</span>
         </div>
         <div style={styles.timer}>
           <Clock3 size={13} />
@@ -143,9 +143,9 @@ function roleForKind(kind: string, level: string) {
     return {
       label: "Yêu cầu",
       icon: <UserRound size={13} />,
-      color: "#9ddcff",
-      borderColor: "#22556d",
-      backgroundColor: "#13242d",
+      color: "#93c5fd",
+      borderColor: "#315a89",
+      backgroundColor: "#142235",
       align: "flex-start" as const
     };
   }
@@ -153,18 +153,18 @@ function roleForKind(kind: string, level: string) {
     return {
       label: "AI",
       icon: <Bot size={13} />,
-      color: "#7ee0b1",
-      borderColor: "#25634a",
-      backgroundColor: "#10261d",
+      color: "#86efac",
+      borderColor: "#2c6f50",
+      backgroundColor: "#12291d",
       align: "flex-end" as const
     };
   }
   return {
     label: level === "error" ? "Lỗi" : level === "warn" ? "Cảnh báo" : "Hệ thống",
     icon: <TerminalSquare size={13} />,
-    color: level === "error" ? "#ff8d85" : level === "warn" ? "#ffd36b" : "#cfcfcf",
-    borderColor: level === "error" ? "#72312d" : level === "warn" ? "#705321" : "#3a3a3a",
-    backgroundColor: level === "error" ? "#2b1716" : level === "warn" ? "#2b2413" : "#202020",
+    color: level === "error" ? "#fca5a5" : level === "warn" ? "#facc15" : "#d1d5db",
+    borderColor: level === "error" ? "#7f2f2f" : level === "warn" ? "#735a20" : "#334155",
+    backgroundColor: level === "error" ? "#2a1518" : level === "warn" ? "#292313" : "#172033",
     align: "stretch" as const
   };
 }
@@ -209,23 +209,23 @@ function formatAgentName(value: string) {
 
 const styles: Record<string, CSSProperties> = {
   container: {
-    backgroundColor: "#171717",
+    backgroundColor: "#0f172a",
     borderRadius: "8px",
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    height: "640px",
+    height: "620px",
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-    border: "1px solid #303030"
+    boxShadow: "0 18px 48px rgba(15, 23, 42, 0.24)",
+    border: "1px solid #263244"
   },
   header: {
-    backgroundColor: "#262626",
-    padding: "8px 12px",
+    backgroundColor: "#172033",
+    padding: "10px 14px",
     display: "grid",
-    gridTemplateColumns: "100px 1fr 160px",
+    gridTemplateColumns: "78px minmax(0, 1fr) auto",
     alignItems: "center",
-    borderBottom: "1px solid #111",
+    borderBottom: "1px solid #263244",
     gap: "8px"
   },
   windowControls: {
@@ -233,8 +233,8 @@ const styles: Record<string, CSSProperties> = {
     gap: "8px"
   },
   dot: {
-    width: "12px",
-    height: "12px",
+    width: "11px",
+    height: "11px",
     borderRadius: "50%"
   },
   headerTitle: {
@@ -242,36 +242,38 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: "center",
     alignItems: "center",
     gap: "6px",
-    color: "#cfcfcf",
+    color: "#e5e7eb",
     fontSize: "12px",
-    fontWeight: 700
+    fontWeight: 800,
+    minWidth: 0
   },
   timer: {
     display: "flex",
     justifyContent: "flex-end",
     alignItems: "center",
     gap: "6px",
-    color: "#a7d7ff",
-    fontSize: "12px"
+    color: "#bfdbfe",
+    fontSize: "12px",
+    whiteSpace: "nowrap"
   },
   statusBar: {
     display: "flex",
     gap: "14px",
     flexWrap: "wrap",
-    padding: "8px 14px",
-    backgroundColor: "#1f1f1f",
-    color: "#9a9a9a",
+    padding: "9px 14px",
+    backgroundColor: "#111827",
+    color: "#aab4c3",
     fontSize: "12px",
-    borderBottom: "1px solid #303030"
+    borderBottom: "1px solid #263244"
   },
   body: {
     flex: 1,
     padding: "16px",
     overflowY: "auto",
-    backgroundColor: "#171717",
-    color: "#d4d4d4",
+    backgroundColor: "#0f172a",
+    color: "#dbe4f0",
     fontSize: "13px",
-    lineHeight: "1.5",
+    lineHeight: "1.58",
     display: "flex",
     flexDirection: "column",
     gap: "12px"
@@ -279,14 +281,14 @@ const styles: Record<string, CSSProperties> = {
   message: {
     display: "flex",
     flexDirection: "column",
-    maxWidth: "100%",
-    gap: "4px"
+    maxWidth: "min(920px, 96%)",
+    gap: "6px"
   },
   messageMeta: {
     display: "flex",
     gap: "10px",
     alignItems: "center",
-    color: "#8b8b8b",
+    color: "#94a3b8",
     fontSize: "11px"
   },
   roleBadge: {
@@ -298,7 +300,7 @@ const styles: Record<string, CSSProperties> = {
   bubble: {
     border: "1px solid",
     borderRadius: "8px",
-    padding: "10px 12px",
+    padding: "11px 13px",
     maxWidth: "100%"
   },
   messageText: {
@@ -307,20 +309,20 @@ const styles: Record<string, CSSProperties> = {
   },
   detail: {
     margin: "10px 0 0",
-    padding: "10px",
+    padding: "11px",
     borderRadius: "6px",
-    backgroundColor: "#101010",
-    border: "1px solid #2d2d2d",
-    color: "#cfcfcf",
+    backgroundColor: "#0b1220",
+    border: "1px solid #263244",
+    color: "#d1d5db",
     overflowX: "auto",
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
-    maxHeight: "320px"
+    maxHeight: "420px"
   },
   runningLine: {
     display: "flex",
     gap: "10px",
-    color: "#7ee0b1",
+    color: "#86efac",
     alignItems: "center"
   },
   cursor: {
