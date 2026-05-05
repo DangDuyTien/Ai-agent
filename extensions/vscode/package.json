@@ -1,0 +1,85 @@
+{
+  "name": "ai-agent-studio-vscode",
+  "displayName": "AI Agent Studio",
+  "description": "Điều khiển Codex/Gemini trực tiếp trong VS Code và Terminal của workspace.",
+  "version": "0.1.0",
+  "publisher": "local-ai-agent",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:aiAgent.openStudio",
+    "onCommand:aiAgent.runCodexTask",
+    "onCommand:aiAgent.reviewWorkspace",
+    "onCommand:aiAgent.stopTerminals",
+    "onView:aiAgentStudio.view"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiAgent.openStudio",
+        "title": "AI Agent: Mở Studio"
+      },
+      {
+        "command": "aiAgent.runCodexTask",
+        "title": "AI Agent: Chạy Codex Cho Workspace"
+      },
+      {
+        "command": "aiAgent.reviewWorkspace",
+        "title": "AI Agent: Rà Soát Workspace"
+      },
+      {
+        "command": "aiAgent.stopTerminals",
+        "title": "AI Agent: Dừng Terminal Agent"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aiAgentStudio",
+          "title": "AI Agent",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "aiAgentStudio": [
+        {
+          "type": "webview",
+          "id": "aiAgentStudio.view",
+          "name": "Studio"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AI Agent Studio",
+      "properties": {
+        "aiAgent.codexCommand": {
+          "type": "string",
+          "default": "codex",
+          "description": "Lệnh Codex CLI dùng trong VS Code Terminal."
+        },
+        "aiAgent.codexModel": {
+          "type": "string",
+          "default": "gpt-5.5",
+          "description": "Model Codex ưu tiên khi chạy tác vụ."
+        },
+        "aiAgent.geminiCommand": {
+          "type": "string",
+          "default": "gemini",
+          "description": "Lệnh Gemini CLI để fallback khi Codex lỗi."
+        },
+        "aiAgent.autoFallbackGemini": {
+          "type": "boolean",
+          "default": true,
+          "description": "Tự chuyển sang Gemini CLI nếu Codex thiếu token, quota hoặc lỗi kết nối."
+        }
+      }
+    }
+  }
+}

@@ -1,13 +1,49 @@
-# Hệ thống AI Agent tổng quát MVP
+# AI Agent Studio
+
+Đường dùng chính hiện tại là VS Code extension: nhập yêu cầu trong VS Code, agent tạo prompt trong workspace, chạy Codex trực tiếp bằng Terminal của máy Mac và fallback sang Gemini CLI khi Codex lỗi/hết token/quota.
+
+## Chạy bằng VS Code Extension
+
+Mở repo trong VS Code rồi chạy debug config:
+
+```txt
+Run and Debug -> Chạy AI Agent VS Code Extension
+```
+
+Hoặc mở extension development host từ terminal:
+
+```bash
+npm run extension:dev
+```
+
+Trong VS Code, bấm biểu tượng `AI Agent` ở Activity Bar:
+
+1. Nhập yêu cầu hoặc ý tưởng cần AI xử lý.
+2. Chọn chế độ: tự code, lập kế hoạch, rà soát, hoặc sửa lỗi.
+3. Bấm `Chạy Codex trong Terminal`.
+
+Extension sẽ lưu prompt ở `.ai-agent/prompts`, mở terminal tích hợp của VS Code và chạy `codex exec` trong đúng workspace đang mở. Nếu Codex thất bại và `aiAgent.autoFallbackGemini=true`, runner tự chuyển sang Gemini CLI.
+
+Kiểm tra extension:
+
+```bash
+npm run extension:check
+```
+
+Tài liệu chi tiết: `extensions/vscode/README.md` và `docs/vscode-extension.md`.
+
+## Web dashboard phụ
 
 MVP này dùng để nhập một ý tưởng dự án thô, cho agent pipeline phân tích theo ngữ cảnh, tạo blueprint, lộ trình, tác vụ, prompt, cổng duyệt, execution bundle và báo cáo đánh giá.
+
+Web dashboard/API vẫn được giữ để tham chiếu pipeline cũ, nhưng không còn là luồng chính khi muốn AI tự thao tác trên codebase.
 
 Hệ thống hỗ trợ hai chế độ:
 
 - `new_project`: tạo kế hoạch cho dự án mới từ ý tưởng thô.
 - `existing_project`: quét repo có sẵn, tạo `codebase_context`, lập task/prompt theo codebase hiện có, thực thi vào `.ai-agent/runs/:projectId` trong repo và đánh giá bằng script của repo nếu có.
 
-## Chạy local
+## Chạy web dashboard local
 
 ```bash
 npm install

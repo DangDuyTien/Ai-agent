@@ -6,6 +6,7 @@ coverage
 .env
 .env.local
 data/db.json
+.ai-agent/
 workspaces/projects/*
 workspaces/uploads/*
 !.gitkeep

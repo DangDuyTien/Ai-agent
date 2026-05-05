@@ -8,6 +8,8 @@
     "clean": "node scripts/clean-next.mjs",
     "build": "next build",
     "build:clean": "node scripts/clean-next.mjs && next build",
+    "extension:check": "node --check extensions/vscode/src/extension.js && bash -n extensions/vscode/resources/agent-runner.sh",
+    "extension:dev": "code --extensionDevelopmentPath=extensions/vscode .",
     "typecheck": "tsc --noEmit",
     "test:integration": "node --test tests/integration.agent-flow.test.mjs"
   },
