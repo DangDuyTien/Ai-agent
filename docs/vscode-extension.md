@@ -1,37 +1,42 @@
-# Chuyển hướng sang VS Code Extension
+# VS Code Task Architect
 
 ## Quyết định
 
-Web dashboard không còn là đường dùng chính. Dự án chuyển trọng tâm sang VS Code extension để AI agent thao tác trực tiếp trên workspace và terminal của máy Mac.
+Dự án chuyển sang mô hình planner-only. Người dùng chỉ nhập prompt; AI phân tích và chia thành cây nhiệm vụ nhiều tầng. Extension không tự code, không chạy terminal và không thao tác file ngoài việc lưu kế hoạch.
 
-## Kiến trúc mới
+## Kiến trúc
 
 ```txt
 VS Code Activity Bar
-  -> AI Agent Studio Webview
-  -> tạo prompt trong .ai-agent/prompts
-  -> mở VS Code Integrated Terminal
-  -> chạy resources/agent-runner.sh
-  -> ưu tiên Codex CLI
-  -> fallback Gemini CLI nếu Codex lỗi và bật cấu hình fallback
+  -> AI Agent Task Architect Webview
+  -> nhận prompt và độ chi tiết
+  -> gọi OpenAI/Codex API hoặc Gemini API nếu có key
+  -> fallback bộ chia local nếu không có provider
+  -> lưu Markdown + JSON trong .ai-agent/task-plans
 ```
 
-## Vì sao cách này hợp lý hơn
+## Cấu trúc nhiệm vụ
 
-- Không phải upload repo qua web.
-- Không cần nhập path `/Applications/...` thủ công.
-- AI nhìn và sửa đúng workspace đang mở.
-- Lệnh kiểm tra chạy trong terminal thật của dự án.
-- Dễ dừng terminal agent ngay trong VS Code.
+```txt
+Nhóm lớn
+  -> Mục con
+    -> Nhiệm vụ rất nhỏ
+```
 
-## Phạm vi bản đầu
+Với yêu cầu lớn, extension nhắm tới khoảng:
 
-- Sidebar extension nhận yêu cầu và chế độ chạy.
-- Lưu prompt thành file để người dùng xem/sửa được.
-- Chạy Codex bằng terminal tích hợp.
-- Fallback Gemini qua CLI nếu Codex lỗi.
-- Có lệnh review workspace và chạy test/typecheck/build nếu repo có script.
+- 5 nhóm lớn
+- tối đa 10 mục con cho mỗi nhóm
+- 3-4 nhiệm vụ rất nhỏ cho mỗi mục con
+
+Với yêu cầu ngắn, chế độ `auto` giảm số node để kế hoạch không bị dài vô ích.
+
+## Vì sao bỏ tự code
+
+- Model yếu dễ quá tải khi vừa phân tích, vừa sửa code, vừa chạy kiểm tra.
+- Kế hoạch xếp tầng giúp giao từng prompt nhỏ cho từng lượt AI khác nhau.
+- Người dùng kiểm soát tốt hơn phạm vi và thứ tự triển khai.
 
 ## Phần web còn giữ lại
 
-Next dashboard/API vẫn ở repo để tham chiếu pipeline cũ và có thể dùng khi cần xem blueprint. Tuy nhiên workflow khuyến nghị là dùng extension trong `extensions/vscode`.
+Next dashboard/API vẫn ở repo như phần legacy để tham chiếu pipeline cũ. Luồng chính mới là extension trong `extensions/vscode`.

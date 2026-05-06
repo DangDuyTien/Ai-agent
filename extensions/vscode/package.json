@@ -1,7 +1,7 @@
 {
   "name": "ai-agent-studio-vscode",
-  "displayName": "AI Agent Studio",
-  "description": "Điều khiển Codex/Gemini trực tiếp trong VS Code và Terminal của workspace.",
+  "displayName": "AI Agent Task Architect",
+  "description": "Phân tích prompt và chia nhiệm vụ nhiều tầng cho các model AI yếu hơn.",
   "version": "0.1.0",
   "publisher": "local-ai-agent",
   "private": true,
@@ -13,9 +13,8 @@
   ],
   "activationEvents": [
     "onCommand:aiAgent.openStudio",
-    "onCommand:aiAgent.runCodexTask",
-    "onCommand:aiAgent.reviewWorkspace",
-    "onCommand:aiAgent.stopTerminals",
+    "onCommand:aiAgent.generateTaskPlan",
+    "onCommand:aiAgent.openLastPlan",
     "onView:aiAgentStudio.view"
   ],
   "main": "./src/extension.js",
@@ -26,16 +25,12 @@
         "title": "AI Agent: Mở Studio"
       },
       {
-        "command": "aiAgent.runCodexTask",
-        "title": "AI Agent: Chạy Codex Cho Workspace"
+        "command": "aiAgent.generateTaskPlan",
+        "title": "AI Agent: Tạo Cây Nhiệm Vụ"
       },
       {
-        "command": "aiAgent.reviewWorkspace",
-        "title": "AI Agent: Rà Soát Workspace"
-      },
-      {
-        "command": "aiAgent.stopTerminals",
-        "title": "AI Agent: Dừng Terminal Agent"
+        "command": "aiAgent.openLastPlan",
+        "title": "AI Agent: Mở Kế Hoạch Gần Nhất"
       }
     ],
     "viewsContainers": {
@@ -57,27 +52,33 @@
       ]
     },
     "configuration": {
-      "title": "AI Agent Studio",
+      "title": "AI Agent Task Architect",
       "properties": {
-        "aiAgent.codexCommand": {
+        "aiAgent.provider": {
           "type": "string",
-          "default": "codex",
-          "description": "Lệnh Codex CLI dùng trong VS Code Terminal."
+          "enum": ["auto", "openai", "gemini", "local"],
+          "default": "auto",
+          "description": "Provider dùng để phân tích prompt. Local không cần API key."
         },
-        "aiAgent.codexModel": {
+        "aiAgent.openaiApiKey": {
           "type": "string",
-          "default": "gpt-5.5",
-          "description": "Model Codex ưu tiên khi chạy tác vụ."
+          "default": "",
+          "description": "OpenAI/Codex API key. Nếu bỏ trống sẽ đọc AI_AGENT_CODEX_API_KEY hoặc OPENAI_API_KEY từ môi trường."
         },
-        "aiAgent.geminiCommand": {
+        "aiAgent.openaiModel": {
           "type": "string",
-          "default": "gemini",
-          "description": "Lệnh Gemini CLI để fallback khi Codex lỗi."
+          "default": "gpt-5.4-mini",
+          "description": "Model OpenAI/Codex API dùng để tạo cây nhiệm vụ."
         },
-        "aiAgent.autoFallbackGemini": {
-          "type": "boolean",
-          "default": true,
-          "description": "Tự chuyển sang Gemini CLI nếu Codex thiếu token, quota hoặc lỗi kết nối."
+        "aiAgent.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Gemini API key. Nếu bỏ trống sẽ đọc GEMINI_API_KEY từ môi trường."
+        },
+        "aiAgent.geminiModel": {
+          "type": "string",
+          "default": "gemini-2.5-flash",
+          "description": "Model Gemini dùng để fallback tạo cây nhiệm vụ."
         }
       }
     }

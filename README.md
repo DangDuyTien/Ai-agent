@@ -1,8 +1,10 @@
-# AI Agent Studio
+# AI Agent Task Architect
 
-Đường dùng chính hiện tại là VS Code extension: nhập yêu cầu trong VS Code, agent tạo prompt trong workspace, chạy Codex trực tiếp bằng Terminal của máy Mac và fallback sang Gemini CLI khi Codex lỗi/hết token/quota.
+Đường dùng chính của dự án là VS Code extension theo mô hình planner-only: người dùng nhập prompt, AI phân tích và chia thành cây nhiệm vụ nhiều tầng. Hệ thống không tự code, không mở terminal và không chạy lệnh trong máy.
 
-## Chạy bằng VS Code Extension
+Mục tiêu là tạo các prompt nhỏ, rõ, có tiêu chí nghiệm thu để giao từng phần cho model AI yếu hơn.
+
+## Chạy VS Code Extension
 
 Mở repo trong VS Code rồi chạy debug config:
 
@@ -10,7 +12,7 @@ Mở repo trong VS Code rồi chạy debug config:
 Run and Debug -> Chạy AI Agent VS Code Extension
 ```
 
-Hoặc mở extension development host từ terminal:
+Hoặc mở extension development host:
 
 ```bash
 npm run extension:dev
@@ -18,145 +20,82 @@ npm run extension:dev
 
 Trong VS Code, bấm biểu tượng `AI Agent` ở Activity Bar:
 
-1. Nhập yêu cầu hoặc ý tưởng cần AI xử lý.
-2. Chọn chế độ: tự code, lập kế hoạch, rà soát, hoặc sửa lỗi.
-3. Bấm `Chạy Codex trong Terminal`.
+1. Nhập prompt hoặc ý tưởng cần phân tích.
+2. Chọn độ chi tiết: tự động, ngắn, vừa, hoặc rất chi tiết.
+3. Bấm `Tạo cây nhiệm vụ`.
 
-Extension sẽ lưu prompt ở `.ai-agent/prompts`, mở terminal tích hợp của VS Code và chạy `codex exec` trong đúng workspace đang mở. Nếu Codex thất bại và `aiAgent.autoFallbackGemini=true`, runner tự chuyển sang Gemini CLI.
-
-Kiểm tra extension:
-
-```bash
-npm run extension:check
-```
-
-Tài liệu chi tiết: `extensions/vscode/README.md` và `docs/vscode-extension.md`.
-
-## Web dashboard phụ
-
-MVP này dùng để nhập một ý tưởng dự án thô, cho agent pipeline phân tích theo ngữ cảnh, tạo blueprint, lộ trình, tác vụ, prompt, cổng duyệt, execution bundle và báo cáo đánh giá.
-
-Web dashboard/API vẫn được giữ để tham chiếu pipeline cũ, nhưng không còn là luồng chính khi muốn AI tự thao tác trên codebase.
-
-Hệ thống hỗ trợ hai chế độ:
-
-- `new_project`: tạo kế hoạch cho dự án mới từ ý tưởng thô.
-- `existing_project`: quét repo có sẵn, tạo `codebase_context`, lập task/prompt theo codebase hiện có, thực thi vào `.ai-agent/runs/:projectId` trong repo và đánh giá bằng script của repo nếu có.
-
-## Chạy web dashboard local
-
-```bash
-npm install
-npm run dev
-```
-
-Mở dashboard tại `http://localhost:3000`.
-
-Kiểm tra:
-
-```bash
-npm run typecheck
-npm run test:integration
-npm run build
-npm audit --omit=dev
-```
-
-## Agent pipeline
-
-1. Agent phân tích codebase, nếu là `existing_project`
-2. Agent phân tích ý định
-3. Agent xây dựng yêu cầu
-4. Agent khám phá chức năng
-5. Agent lập kiến trúc
-6. Agent chia nhỏ tác vụ
-7. Agent soạn prompt
-8. Agent thực thi
-9. Agent đánh giá
-10. Agent bộ nhớ/ngữ cảnh
-
-MVP đang dùng bộ chạy heuristic và JSON-file storage trong `data/db.json`. Các hợp đồng agent, tài liệu và tác vụ được type hóa để sau này thay bằng LLM provider, PostgreSQL/JSONB và queue worker mà không phải đổi bảng điều khiển.
-
-## Cấu hình runtime
+Kết quả được lưu tại:
 
 ```txt
-AI_AGENT_DB_PATH=/đường/dẫn/db.json
-AI_AGENT_WORKSPACE_ROOT=/đường/dẫn/workspaces
-AI_AGENT_EXECUTOR=file-edits | codex
-AI_AGENT_LLM_PROVIDER=auto | mock
-AI_AGENT_CODEX_API_KEY=...   # ưu tiên; có thể dùng CODEX_API_KEY hoặc OPENAI_API_KEY
-AI_AGENT_CODEX_API_MODEL=gpt-5.4-mini
-OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-5.4-mini
-GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.5-flash
-AI_AGENT_CODEX_COMMAND=codex
-AI_AGENT_CODEX_MODEL=gpt-5.5
-AI_AGENT_CODEX_PROFILE=...
-AI_AGENT_CODEX_EPHEMERAL=true
-AI_AGENT_CODEX_TIMEOUT_MS=600000
-AI_AGENT_SANDBOX=local | docker
-AI_AGENT_DOCKER_IMAGE=node:22-alpine
-AI_AGENT_SANDBOX_TIMEOUT_MS=120000
-AI_AGENT_MAX_FIX_ITERATIONS=2
-AI_AGENT_STATIC_FILE_EDITS='{"summary":"...","edits":[...]}'
+.ai-agent/task-plans/:timestamp-:title.md
+.ai-agent/task-plans/:timestamp-:title.json
 ```
 
-Thực thi chỉ được chạy khi phiên bản mới nhất của các tài liệu bắt buộc đã được duyệt. Mỗi kết quả thực thi lưu `approvedArtifactSnapshot`; Agent đánh giá sẽ báo lỗi nếu có kế hoạch mới hơn xuất hiện sau lần thực thi.
+## Cây nhiệm vụ
 
-Với `existing_project`, `codebase_context` cũng là tài liệu bắt buộc phải duyệt. Agent đánh giá sẽ chạy sandbox trên chính đường dẫn nguồn của repo, không phải thư mục bundle.
+```txt
+Nhóm lớn
+  -> Mục con
+    -> Nhiệm vụ rất nhỏ
+```
 
-Khi sửa repo có sẵn, có thể bấm `Chọn thư mục` trong dashboard để upload thư mục dự án vào `AI_AGENT_WORKSPACE_ROOT/uploads`, hoặc `workspaces/uploads` nếu chưa cấu hình biến môi trường. Hệ thống tự điền `sourcePath` của bản copy này để agent quét mã nguồn; các thư mục nặng như `.git`, `node_modules`, `.next`, `dist`, `build`, `coverage` được bỏ qua khi upload.
+Chế độ `deep` nhắm tới cấu trúc rất chi tiết: khoảng 5 nhóm lớn, mỗi nhóm tối đa 10 mục con, mỗi mục con tối đa 3-4 nhiệm vụ rất nhỏ. Chế độ `auto` tự giảm hoặc tăng số node theo độ dài prompt.
 
-Bộ chọn provider luôn ưu tiên Codex theo thứ tự: Codex CLI nếu đã đăng nhập, Codex/OpenAI API nếu có key, rồi mới fallback sang Gemini khi Codex thiếu token, hết quota hoặc lỗi kết nối. Nếu không có key thật, hệ thống dùng mock để vẫn tạo được blueprint nhưng không sửa code thật.
+Mỗi node có:
 
-Các tài liệu lập kế hoạch chính (`intent_analysis`, `requirements`, `feature_discovery`, `architecture_plan`, `roadmap`, `task_plan`, `execution_prompt`) đều ưu tiên sinh bằng Codex/OpenAI API hoặc Gemini fallback. Khi không có provider thật, hệ thống mới dùng heuristic động theo ý tưởng, loại dự án, feature, kiến trúc và tích hợp; không còn nhân task theo phase cứng cho mọi dự án.
+- `title`: tên nhiệm vụ
+- `objective`: mục tiêu cụ thể
+- `prompt`: prompt riêng để giao cho model yếu
+- `acceptance`: tiêu chí nghiệm thu
+- `children`: nhiệm vụ con
 
-Tab nhật ký hiển thị theo dạng chat terminal: yêu cầu gửi vào agent, output AI/provider trả về, thời điểm log và thời gian agent đang chạy.
+## Cấu hình AI
 
-Khi tạo `execution_prompt`, hệ thống không yêu cầu AI sinh tất cả prompt trong một lần. Prompt Composer gọi provider theo từng tác vụ nhỏ, sau đó ghép kết quả thành danh sách prompt đã duyệt để giảm quá tải cho model yếu.
+Extension ưu tiên API nếu có key. Nếu chưa cấu hình key hoặc provider lỗi, extension dùng bộ chia local để vẫn tạo được kế hoạch.
 
-Với dự án đang chọn, có thể nhập yêu cầu ở khối `Phát triển tiếp`. Hệ thống sẽ append yêu cầu mới vào bối cảnh dự án, giữ codebase hiện có nếu có, rồi chạy lại phân tích để tạo lộ trình/tác vụ/prompt cho phần phát triển bổ sung.
-
-Bộ thực thi sửa code gọi provider để lấy danh sách chỉnh sửa file dạng JSON:
+Trong VS Code settings:
 
 ```json
 {
-  "summary": "short summary",
-  "edits": [
-    {
-      "path": "relative/path.ts",
-      "action": "create | overwrite | replace | append",
-      "content": "file content",
-      "oldText": "text to replace",
-      "newText": "replacement"
-    }
-  ]
+  "aiAgent.provider": "auto",
+  "aiAgent.openaiApiKey": "",
+  "aiAgent.openaiModel": "gpt-5.4-mini",
+  "aiAgent.geminiApiKey": "",
+  "aiAgent.geminiModel": "gemini-2.5-flash"
 }
 ```
 
-Đường dẫn edit bắt buộc nằm trong thư mục làm việc và bị chặn nếu đi vào `.git`, `node_modules`, `.next`, `dist`, `build`, `coverage`, `.ai-agent`.
-
-Nếu dùng Codex CLI:
-
-```bash
-codex login status
-codex logout
-codex login
-AI_AGENT_EXECUTOR=codex npm run dev
-```
-
-Khi hết token hoặc muốn đổi tài khoản, chạy `codex logout` rồi `codex login` trong terminal. Agent sẽ dùng lại credentials mới trong lần execute tiếp theo. Trạng thái CLI có thể kiểm tra qua `GET /api/codex/status`.
-
-## API chính
+Có thể để trống key trong settings và dùng biến môi trường:
 
 ```txt
-POST /api/uploads/codebase
-POST /api/projects
-POST /api/projects/:projectId/codebase
-POST /api/projects/:projectId/analyze
-GET  /api/projects/:projectId/blueprint
-PATCH /api/projects/:projectId/artifacts/:artifactId
-POST /api/projects/:projectId/artifacts/:artifactId/approve
-POST /api/projects/:projectId/execute
-POST /api/projects/:projectId/review
+AI_AGENT_CODEX_API_KEY=...
+OPENAI_API_KEY=...
+GEMINI_API_KEY=...
 ```
+
+## Lệnh
+
+```bash
+npm run extension:check
+npm run typecheck
+npm run test:integration
+npm run build
+```
+
+## Tài liệu
+
+- `extensions/vscode/README.md`: cách dùng extension.
+- `docs/architecture.md`: kiến trúc Task Architect.
+- `docs/vscode-extension.md`: quyết định chuyển sang planner-only.
+
+## Legacy Web Dashboard
+
+Next dashboard/API cũ vẫn còn trong repo để tham chiếu pipeline trước đây và giữ test tích hợp. Luồng chính mới là VS Code extension trong `extensions/vscode`.
+
+Chạy web dashboard legacy khi cần:
+
+```bash
+npm run dev:clean
+```
+
+Mặc định mở tại `http://localhost:3100`.
